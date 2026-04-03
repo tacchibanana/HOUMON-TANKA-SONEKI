@@ -3,129 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪問看護費用シミュレーション</title>
+    <title>訪問看護費用シミュレーター</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f3f4f6; color: #1a202c; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 16px; }
-        input[type="number"] { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; width: 100%; font-weight: bold; }
-        .bg-special { background-color: #fff7ed; border: 1px solid #ffedd5; }
+        .card { background: white; border-radius: 20px; border: 2px solid #e2e8f0; padding: 24px; margin-bottom: 24px; }
+        input[type="number"] { border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px; width: 100%; font-size: 1.5rem; font-weight: 900; text-align: center; color: #1e293b; }
+        @media print {
+            nav, .no-print, button, #settings, #dash { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .card { border: 2px solid #000 !important; box-shadow: none !important; margin: 0 !important; padding: 15px !important; }
+            .max-w-lg { max-width: 100% !important; }
+            .print-only { display: block !important; }
+            .item-checked { display: flex !important; border-bottom: 1px solid #eee; padding: 10px 0; }
+        }
+        .print-only { display: none; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="p-0">
 
-    <nav class="bg-indigo-700 text-white p-4 sticky top-0 z-50 flex justify-around shadow-lg">
-        <button onclick="showTab('calc')" class="text-sm font-bold">費用計算</button>
-        <button onclick="showTab('dash')" class="text-sm font-bold">分析DB</button>
-        <button onclick="showTab('settings')" class="text-sm font-bold">⚙️ 設定</button>
+    <nav class="bg-[#1e293b] text-white p-4 sticky top-0 z-50 flex justify-around shadow-xl no-print">
+        <button onclick="showTab('calc')" class="text-base font-black">💰 費用計算</button>
+        <button onclick="showTab('dash')" class="text-base font-black">📈 分析DB</button>
+        <button onclick="showTab('settings')" class="text-base font-black">⚙️ 設定</button>
     </nav>
 
     <div class="p-4 max-w-lg mx-auto">
+        <div class="print-only mb-8 border-b-4 border-black pb-4 text-center">
+            <h1 class="text-3xl font-black">訪問看護 費用概算お見積書</h1>
+            <p class="text-right mt-4 font-bold text-lg">作成日: <span id="print-date"></span></p>
+        </div>
 
         <section id="calc" class="tab-content active">
-            <h2 class="text-xl font-bold mb-4 text-gray-700">💰 訪問看護費用シミュレーション</h2>
+            <div class="flex justify-between items-center mb-6 no-print">
+                <h2 class="text-2xl font-black text-[#1e293b]">費用を計算する</h2>
+                <button onclick="window.print()" class="bg-green-700 text-white px-6 py-3 rounded-full font-black shadow-lg hover:bg-green-800 transition-all text-sm">🖨️ 印刷/保存</button>
+            </div>
             
-            <div class="card mb-4">
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <select id="calc-type" class="p-3 border rounded-lg bg-gray-50 font-bold text-indigo-700" onchange="renderCalcItems()">
-                        <option value="medical">医療保険モード</option>
-                        <option value="care">介護保険モード</option>
-                    </select>
-                    <select id="user-ratio" class="p-3 border rounded-lg bg-gray-50 font-bold text-orange-600" onchange="calculate()">
-                        <option value="0.1">負担: 1割</option>
-                        <option value="0.2">負担: 2割</option>
-                        <option value="0.3">負担: 3割</option>
-                    </select>
-                </div>
-
-                <div class="p-4 bg-indigo-50 rounded-xl mb-4 border border-indigo-100 shadow-sm">
-                    <label class="text-[10px] font-bold text-indigo-700 uppercase block mb-1">① 通常訪問回数（月間）</label>
-                    <input type="number" id="input-visit-count" value="12" min="0" class="text-center text-lg text-indigo-900 h-10" oninput="calculate()">
-                    <div id="calc-items" class="mt-3 space-y-2 max-h-48 overflow-y-auto pr-1"></div>
-                </div>
-
-                <div class="p-4 bg-special rounded-xl mb-4 border border-orange-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="text-[10px] font-bold text-orange-700 uppercase">② 特別指示（別枠計算）</label>
+            <div class="card shadow-sm">
+                <div class="grid grid-cols-2 gap-4 mb-8 no-print">
+                    <div class="flex flex-col">
+                        <label class="text-xs font-bold text-gray-500 mb-1">使う保険</label>
+                        <select id="calc-type" class="p-3 border-2 border-indigo-200 rounded-xl font-black text-indigo-900 bg-indigo-50 text-lg" onchange="renderCalcItems()">
+                            <option value="medical">医療保険</option>
+                            <option value="care">介護保険</option>
+                        </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="flex flex-col">
+                        <label class="text-xs font-bold text-gray-500 mb-1">自己負担</label>
+                        <select id="user-ratio" class="p-3 border-2 border-orange-200 rounded-xl font-black text-orange-900 bg-orange-50 text-lg" onchange="calculate()">
+                            <option value="0.1">1割</option>
+                            <option value="0.2">2割</option>
+                            <option value="0.3">3割</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl mb-6 border-2 border-slate-200 print:bg-white print:border-black">
+                    <label class="text-base font-black text-slate-800 mb-3 block text-center">① ひと月の訪問回数</label>
+                    <div class="flex items-center gap-6">
+                        <button onclick="adjustVal('input-visit-count', -1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">-</button>
+                        <input type="number" id="input-visit-count" value="12" min="0" class="flex-1 text-4xl print:text-5xl" oninput="calculate()">
+                        <button onclick="adjustVal('input-visit-count', 1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">+</button>
+                    </div>
+                    <div class="mt-8">
+                        <p class="text-xs font-black text-slate-400 mb-4 border-b-2 border-slate-200 pb-1 uppercase tracking-widest">含まれる費用・加算項目</p>
+                        <div id="calc-items" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-orange-50 rounded-2xl mb-8 border-2 border-orange-100 print:bg-white print:border-black">
+                    <label class="text-base font-black text-orange-900 mb-4 block text-center">② 特別指示（連日訪問など）</label>
+                    <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <p class="text-[9px] text-orange-600 mb-1">指示期間内回数</p>
-                            <input type="number" id="input-special-count" value="8" min="0" class="h-10 text-center" oninput="calculate()">
+                            <p class="text-xs font-bold text-orange-600 mb-1">指示期間の回数</p>
+                            <input type="number" id="input-special-count" value="8" min="0" class="no-print" oninput="calculate()">
+                            <span class="print-only text-3xl font-black" id="print-spec-count"></span>
                         </div>
                         <div>
-                            <p class="text-[9px] text-orange-600 mb-1">特指示単価(円)</p>
-                            <input type="number" id="input-special-price" value="6550" class="h-10 text-center" oninput="calculate()">
+                            <p class="text-xs font-bold text-orange-600 mb-1">1回の料金(円)</p>
+                            <input type="number" id="input-special-price" value="6550" min="0" class="no-print" oninput="calculate()">
+                            <span class="print-only text-3xl font-black" id="print-spec-price"></span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="space-y-2 mt-4">
-                    <div class="flex gap-2">
-                        <div class="flex-1 p-3 bg-white border border-gray-200 rounded-lg text-center shadow-sm">
-                            <p class="text-[9px] font-bold text-gray-500 uppercase">通常報酬額</p>
-                            <p class="text-sm font-black text-gray-800" id="res-normal">¥0</p>
-                        </div>
-                        <div class="flex-1 p-3 bg-orange-50 rounded-lg text-center border border-orange-200 shadow-sm">
-                            <p class="text-[9px] font-bold text-orange-600 uppercase">特別指示報酬額</p>
-                            <p class="text-sm font-black text-orange-800" id="res-special">¥0</p>
-                        </div>
+                <div class="space-y-4">
+                    <div class="hidden">
+                        <span id="res-normal">0</span>
+                        <span id="res-special">0</span>
                     </div>
-                    <div class="p-4 bg-indigo-900 text-white rounded-xl flex justify-between items-center shadow-lg border-b-4 border-indigo-950">
-                        <span class="text-xs font-bold italic">合計報酬額</span>
-                        <span class="text-2xl font-black" id="result-price">¥0</span>
+
+                    <div class="p-5 bg-slate-800 text-white rounded-2xl flex justify-between items-center print:text-black print:bg-slate-100">
+                        <span class="text-sm font-black">合計の費用 (100%)</span>
+                        <span class="text-3xl font-black" id="result-price">¥0</span>
                     </div>
-                    <div class="p-4 bg-orange-500 text-white rounded-xl flex justify-between items-center shadow-lg">
-                        <span class="text-xs font-bold">利用者負担額 (合計)</span>
-                        <span class="text-2xl font-black" id="user-cost">¥0</span>
+                    <div class="p-8 bg-orange-600 text-white rounded-2xl flex flex-col items-center shadow-2xl print:text-black print:bg-white print:border-8 print:border-orange-600">
+                        <span class="text-lg font-black mb-1">あなたがお支払いする概算額</span>
+                        <span class="text-6xl font-black" id="user-cost">¥0</span>
                     </div>
+                </div>
+
+                <div class="print-only mt-20 grid grid-cols-2 gap-16">
+                    <div class="border-b-2 border-black h-24 relative"><span class="text-xs font-bold absolute -top-6">ご説明者（印）</span></div>
+                    <div class="border-b-2 border-black h-24 relative"><span class="text-xs font-bold absolute -top-6">ご確認者様（署名）</span></div>
                 </div>
             </div>
         </section>
 
-        <section id="dash" class="tab-content">
-            <h2 class="text-xl font-bold mb-4 font-bold text-gray-700">📈 経営ダッシュボード</h2>
-            <div class="card space-y-4 text-sm">
+        <section id="dash" class="tab-content no-print">
+            <h2 class="text-2xl font-black mb-6">経営分析 (毎日稼働)</h2>
+            <div class="card space-y-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="font-bold text-blue-600 block mb-1">医療単価(¥)</label><input type="number" id="input-med" value="8500" oninput="updateDashboard()"></div>
-                    <div><label class="font-bold text-green-600 block mb-1">介護単価(¥)</label><input type="number" id="input-care" value="9000" oninput="updateDashboard()"></div>
+                    <div><label class="text-xs font-bold text-blue-600 mb-1 block">医療単価</label><input type="number" id="input-med" value="8500" oninput="updateDashboard()"></div>
+                    <div><label class="text-xs font-bold text-green-600 mb-1 block">介護単価</label><input type="number" id="input-care" value="9000" oninput="updateDashboard()"></div>
                 </div>
                 <div>
-                    <div class="flex justify-between mb-1 text-xs"><label class="font-bold text-purple-600">医療 : 介護 比率</label><span id="val-ratio" class="font-bold text-purple-800">50% : 50%</span></div>
-                    <input type="range" id="slide-ratio" min="0" max="100" step="5" value="50" class="w-full" oninput="updateDashboard()">
+                    <div class="flex justify-between mb-2 text-sm font-bold"><label>医療 : 介護 比率</label><span id="val-ratio">50% : 50%</span></div>
+                    <input type="range" id="slide-ratio" min="0" max="100" step="5" value="50" class="w-full h-3 bg-gray-200 rounded-lg appearance-none accent-indigo-600" oninput="updateDashboard()">
                 </div>
-                <div><label class="font-bold text-red-600 block mb-1">月間固定費(¥)</label><input type="number" id="input-fixed" value="600000" oninput="updateDashboard()"></div>
+                <div><label class="text-xs font-bold text-red-600 mb-1 block">月間固定費</label><input type="number" id="input-fixed" value="1200000" oninput="updateDashboard()"></div>
             </div>
-            <div class="card"><canvas id="bepChart" height="180"></canvas></div>
+            <div class="grid grid-cols-2 gap-4 text-center mb-6">
+                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-red-500"><p class="text-xs font-bold text-gray-400">損益分岐点</p><p class="text-3xl font-black" id="bep-count">0回</p></div>
+                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-indigo-500"><p class="text-xs font-bold text-gray-400">1日目標</p><p class="text-3xl font-black" id="daily-target">0.0回</p></div>
+            </div>
+            <div class="card"><canvas id="bepChart" height="200"></canvas></div>
         </section>
 
-        <section id="settings" class="tab-content">
-            <h2 class="text-xl font-bold mb-4 font-bold text-gray-700">⚙️ マスタ管理</h2>
-            <div class="card bg-gray-100 border-dashed border-2 border-gray-300">
-                <h3 class="font-bold mb-3 text-sm underline">項目の新規追加</h3>
-                <div class="space-y-3">
-                    <select id="new-type" class="w-full p-2 border rounded-md"><option value="medical">医療保険</option><option value="care">介護保険</option></select>
-                    <input type="text" id="new-name" placeholder="名称" class="w-full p-2 border rounded-md">
-                    <input type="number" id="new-price" placeholder="基本単価" class="w-full p-2 border rounded-md">
-                    <div id="extra-price-input" class="p-2 bg-blue-50 rounded border hidden">
-                        <label class="text-[10px] font-bold text-blue-600">週4(13回目)以降の単価</label>
-                        <input type="number" id="new-price-extra" placeholder="週4〜単価" class="w-full p-2 border rounded">
-                    </div>
-                    <select id="new-logic" class="w-full p-2 border rounded-md font-bold text-blue-700" onchange="toggleExtraPrice()">
+        <section id="settings" class="tab-content no-print">
+            <h2 class="text-2xl font-black mb-6">マスタ設定</h2>
+            <div class="card bg-gray-50 border-2 border-dashed">
+                <div class="space-y-4">
+                    <select id="new-type" class="w-full p-4 border rounded-xl"><option value="medical">医療保険</option><option value="care">介護保険</option></select>
+                    <input type="text" id="new-name" placeholder="名称" class="w-full p-4 border rounded-xl">
+                    <input type="number" id="new-price" placeholder="単価(円)" class="w-full p-4 border rounded-xl">
+                    <select id="new-logic" class="w-full p-4 border rounded-xl font-bold text-indigo-700">
                         <option value="per-visit">毎回計上</option>
-                        <option value="limit-12">週3(12回)まで</option>
-                        <option value="switch-13">週4(13回)から単価変更</option>
-                        <option value="after-2">2回目以降から計上</option>
                         <option value="once-month">月1回のみ</option>
+                        <option value="after-2">2回目以降から</option>
                     </select>
-                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">保存</button>
+                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xl">保存する</button>
                 </div>
             </div>
-            <div id="master-list-container" class="mt-4"></div>
+            <div id="master-list-container" class="mt-8"></div>
         </section>
-
     </div>
 
     <script>
@@ -133,7 +159,7 @@
             medical: [
                 { name: '基本療養費', price: 5550, logic: 'per-visit' },
                 { name: '管理療養費(初回)', price: 7670, logic: 'once-month' },
-                { name: '管理療養費(2回目以降)', price: 3000, logic: 'after-2' }, // デフォルト設定に追加
+                { name: '管理療養費(2回目以降)', price: 3000, logic: 'after-2' },
                 { name: '24時間対応体制加算', price: 6800, logic: 'once-month' }
             ],
             care: [
@@ -146,12 +172,13 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if(tabId === 'dash') updateDashboard();
+            calculate();
         }
 
-        function toggleExtraPrice() {
-            const logic = document.getElementById('new-logic').value;
-            const extraDiv = document.getElementById('extra-price-input');
-            extraDiv.classList.toggle('hidden', logic !== 'switch-13');
+        function adjustVal(id, amount) {
+            const el = document.getElementById(id);
+            el.value = Math.max(0, parseInt(el.value) + amount);
+            calculate();
         }
 
         function renderCalcItems() {
@@ -159,20 +186,27 @@
             const container = document.getElementById('calc-items');
             container.innerHTML = '';
             masterData[type].forEach((item, idx) => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center justify-between p-3 bg-white border rounded-lg mb-1 cursor-pointer';
-                // 初期状態でチェックを入れるための設定（利便性のため）
+                const label = document.createElement('div');
+                label.id = `item-row-${idx}`;
+                label.className = 'flex items-center justify-between p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-sm cursor-pointer';
                 const isChecked = (item.name.includes('基本') || item.name.includes('管理')) ? 'checked' : '';
-                label.innerHTML = `<div class="flex flex-col text-left"><span class="text-xs font-bold">${item.name}</span><span class="text-[8px] text-gray-400 font-bold">${getLogicName(item.logic)}</span></div>
-                                   <input type="checkbox" class="w-5 h-5 item-check" data-idx="${idx}" onchange="calculate()" ${isChecked}>`;
+                label.innerHTML = `
+                    <div class="flex items-center gap-5">
+                        <input type="checkbox" class="w-6 h-6 item-check no-print" data-idx="${idx}" onchange="calculate()" ${isChecked}>
+                        <span class="text-base font-black text-slate-700">${item.name}</span>
+                    </div>
+                    <span class="text-lg font-bold text-slate-400 font-mono">¥${item.price.toLocaleString()}</span>
+                `;
+                label.onclick = (e) => {
+                    if(e.target.type !== 'checkbox') {
+                        const cb = label.querySelector('input');
+                        cb.checked = !cb.checked;
+                        calculate();
+                    }
+                };
                 container.appendChild(label);
             });
             calculate();
-        }
-
-        function getLogicName(logic) {
-            const names = { 'per-visit': '毎回', 'limit-12': '週3まで', 'switch-13': '週4単価UP', 'after-2': '2回目以降', 'once-month': '月1回' };
-            return names[logic] || '';
         }
 
         function calculate() {
@@ -182,69 +216,36 @@
             const specialCount = parseInt(document.getElementById('input-special-count').value) || 0;
             const specialPrice = parseInt(document.getElementById('input-special-price').value) || 0;
 
+            document.getElementById('print-date').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+            document.getElementById('print-spec-count').innerText = specialCount + '回';
+            document.getElementById('print-spec-price').innerText = '¥' + specialPrice.toLocaleString();
+
             let normalTotal = 0;
-            document.querySelectorAll('.item-check:checked').forEach(el => {
+            document.querySelectorAll('.item-check').forEach((el) => {
                 const item = masterData[type][el.dataset.idx];
-                switch(item.logic) {
-                    case 'per-visit': normalTotal += item.price * visits; break;
-                    case 'once-month': normalTotal += item.price; break;
-                    case 'limit-12': normalTotal += item.price * Math.min(visits, 12); break;
-                    case 'after-2': if(visits >= 2) normalTotal += item.price * (visits - 1); break;
-                    case 'switch-13': 
-                        if(visits <= 12) normalTotal += item.price * visits;
-                        else normalTotal += (item.price * 12) + (item.priceExtra * (visits - 12));
-                        break;
+                const row = document.getElementById(`item-row-${el.dataset.idx}`);
+                if(el.checked) {
+                    row.classList.add('item-checked', 'border-indigo-500', 'bg-indigo-50');
+                    if(item.logic === 'per-visit') normalTotal += item.price * visits;
+                    else if(item.logic === 'once-month') normalTotal += item.price;
+                    else if(item.logic === 'after-2' && visits >= 2) normalTotal += item.price * (visits - 1);
+                } else {
+                    row.classList.remove('item-checked', 'border-indigo-500', 'bg-indigo-50');
                 }
             });
-            if(type === 'care') normalTotal = Math.round(normalTotal * 10.7);
 
+            if(type === 'care') normalTotal = Math.round(normalTotal * 10.7);
             let specialTotal = specialCount * specialPrice;
             if(type === 'care') specialTotal = Math.round(specialTotal * 10.7);
 
             const grandTotal = normalTotal + specialTotal;
             const userTotal = Math.floor(grandTotal * ratio);
 
-            document.getElementById('res-normal').innerText = `¥${normalTotal.toLocaleString()}`;
-            document.getElementById('res-special').innerText = `¥${specialTotal.toLocaleString()}`;
-            document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
-            document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
-        }
-
-        function renderMaster() {
-            const container = document.getElementById('master-list-container');
-            container.innerHTML = '';
-            ['medical', 'care'].forEach(type => {
-                const title = document.createElement('h4');
-                title.className = 'text-[10px] font-bold text-gray-400 mt-4 mb-2 uppercase';
-                title.innerText = type === 'medical' ? '医療保険' : '介護保険';
-                container.appendChild(title);
-                masterData[type].forEach((item, idx) => {
-                    const d = document.createElement('div');
-                    d.className = 'flex justify-between items-center bg-white p-2 rounded-lg shadow-sm mb-1 text-xs border-l-4 border-indigo-400';
-                    const priceDisp = item.logic === 'switch-13' ? `${item.price}→${item.priceExtra}` : item.price;
-                    d.innerHTML = `<div><p class="font-bold">${item.name}</p></div><div class="flex items-center gap-2"><span class="font-bold text-indigo-600">${priceDisp}</span>
-                                   <button onclick="deleteItem('${type}', ${idx})" class="text-red-400 font-bold px-2">×</button></div>`;
-                    container.appendChild(d);
-                });
-            });
-            renderCalcItems();
-        }
-
-        function addItem() {
-            const name = document.getElementById('new-name').value;
-            const price = parseInt(document.getElementById('new-price').value);
-            if(!name || isNaN(price)) return;
-            masterData[document.getElementById('new-type').value].push({
-                name, price,
-                priceExtra: parseInt(document.getElementById('new-price-extra').value) || 0,
-                logic: document.getElementById('new-logic').value
-            });
-            renderMaster();
-            ['new-name', 'new-price', 'new-price-extra'].forEach(id => document.getElementById(id).value = '');
-        }
-
-        function deleteItem(type, idx) {
-            if(confirm('削除しますか？')) { masterData[type].splice(idx, 1); renderMaster(); }
+            // 要素が存在することを確認してから値をセット
+            if(document.getElementById('res-normal')) document.getElementById('res-normal').innerText = normalTotal;
+            if(document.getElementById('res-special')) document.getElementById('res-special').innerText = specialTotal;
+            if(document.getElementById('result-price')) document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
+            if(document.getElementById('user-cost')) document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
         }
 
         let myChart;
@@ -256,13 +257,54 @@
             document.getElementById('val-ratio').innerText = `${ratio}% : ${100-ratio}%`;
             const avgPrice = (medP * (ratio/100)) + (careP * ((100-ratio)/100));
             const bep = avgPrice > 0 ? Math.ceil(fixed / avgPrice) : 0;
+            document.getElementById('bep-count').innerText = `${bep.toLocaleString()}回`;
+            document.getElementById('daily-target').innerText = `${(bep / 30.4).toFixed(1)}回`;
             const ctx = document.getElementById('bepChart').getContext('2d');
             if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, { type: 'line', data: { labels: ['0', 'BEP', 'Target'], datasets: [{ label: '収益', data: [0, fixed, fixed*1.5], borderColor: '#4f46e5', fill: true, backgroundColor: 'rgba(79, 70, 229, 0.1)' }, { label: '固定費', data: [fixed, fixed, fixed], borderColor: '#f87171', borderDash: [5,5] }] }, options: { plugins: { legend: { display: false } }, animation: false } });
+            myChart = new Chart(ctx, {
+                type: 'line', data: { labels: ['0', '損益分岐点', '目標'], datasets: [{ label: '収益', data: [0, fixed, fixed*1.5], borderColor: '#4338ca', borderWidth: 6, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.05)' }, { label: '固定費', data: [fixed, fixed, fixed], borderColor: '#ef4444', borderDash: [5,5], borderWidth: 3 }] },
+                options: { plugins: { legend: { display: false } }, animation: false, scales: { y: { display: false } } }
+            });
         }
 
-        renderCalcItems();
-        renderMaster();
+        function renderMaster() {
+            const container = document.getElementById('master-list-container');
+            container.innerHTML = '';
+            ['medical', 'care'].forEach(type => {
+                const title = document.createElement('h4');
+                title.className = 'text-xs font-black text-gray-400 mt-8 mb-4 uppercase tracking-widest';
+                title.innerText = type === 'medical' ? '医療保険マスタ' : '介護保険マスタ';
+                container.appendChild(title);
+                masterData[type].forEach((item, idx) => {
+                    const d = document.createElement('div');
+                    d.className = 'flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm mb-3 border-l-8 border-indigo-600';
+                    d.innerHTML = `<div><p class="font-black text-base">${item.name}</p><p class="text-[10px] text-gray-400">${item.logic}</p></div><div class="flex items-center gap-4"><span class="font-black text-indigo-700 text-lg">¥${item.price.toLocaleString()}</span><button onclick="deleteItem('${type}', ${idx})" class="text-red-400 font-black text-2xl px-2">×</button></div>`;
+                    container.appendChild(d);
+                });
+            });
+            renderCalcItems();
+        }
+
+        function addItem() {
+            const type = document.getElementById('new-type').value;
+            const name = document.getElementById('new-name').value;
+            const price = parseInt(document.getElementById('new-price').value);
+            const logic = document.getElementById('new-logic').value;
+            if(!name || isNaN(price)) return;
+            masterData[type].push({ name, price, logic });
+            renderMaster();
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-price').value = '';
+        }
+
+        function deleteItem(type, idx) {
+            if(confirm('削除しますか？')) { masterData[type].splice(idx, 1); renderMaster(); }
+        }
+
+        window.onload = function() {
+            renderMaster();
+            updateDashboard();
+        };
     </script>
 </body>
 </html>
