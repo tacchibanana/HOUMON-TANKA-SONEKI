@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪問看護DXシミュレーター Final</title>
+    <title>訪問看護DXシミュレーター Final Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 16px; }
-        input[type="range"] { height: 8px; border-radius: 5px; background: #e5e7eb; accent-color: #4f46e5; }
+        input[type="number"] { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -38,23 +38,20 @@
                     </select>
                 </div>
 
-                <div class="mb-6 p-3 bg-indigo-50 rounded-lg">
-                    <div class="flex justify-between mb-2">
-                        <label class="text-xs font-bold text-indigo-700 uppercase">月間訪問回数</label>
-                        <span class="font-black text-indigo-700" id="val-visit-count">12回</span>
-                    </div>
-                    <input type="range" id="slide-visit-count" min="1" max="30" value="12" class="w-full" oninput="calculate()">
+                <div class="mb-6 p-4 bg-indigo-50 rounded-xl">
+                    <label class="text-xs font-bold text-indigo-700 uppercase block mb-2">月間訪問回数（自由入力）</label>
+                    <input type="number" id="input-visit-count" value="12" min="1" class="text-center text-xl text-indigo-900" oninput="calculate()">
                 </div>
                 
                 <div id="calc-items" class="space-y-2 max-h-60 overflow-y-auto pr-1 border-b mb-4"></div>
                 
                 <div class="space-y-2">
-                    <div class="p-4 bg-indigo-900 text-white rounded-xl flex justify-between items-center">
+                    <div class="p-4 bg-indigo-900 text-white rounded-xl flex justify-between items-center shadow-lg">
                         <span class="text-xs font-bold">月間報酬総額</span>
                         <span class="text-2xl font-black" id="result-price">¥0</span>
                     </div>
-                    <div class="p-4 bg-orange-500 text-white rounded-xl flex justify-between items-center">
-                        <span class="text-xs font-bold">利用者自己負担</span>
+                    <div class="p-4 bg-orange-500 text-white rounded-xl flex justify-between items-center shadow-lg">
+                        <span class="text-xs font-bold">利用者自己負担額</span>
                         <span class="text-2xl font-black" id="user-cost">¥0</span>
                     </div>
                 </div>
@@ -67,11 +64,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs font-bold text-blue-600 block mb-1">医療平均単価(¥)</label>
-                        <input type="number" id="input-med" value="8500" class="w-full border p-2 rounded" oninput="updateDashboard()">
+                        <input type="number" id="input-med" value="8500" oninput="updateDashboard()">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-green-600 block mb-1">介護平均単価(¥)</label>
-                        <input type="number" id="input-care" value="9000" class="w-full border p-2 rounded" oninput="updateDashboard()">
+                        <input type="number" id="input-care" value="9000" oninput="updateDashboard()">
                     </div>
                 </div>
                 <div>
@@ -83,13 +80,13 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold text-red-600 block mb-1">月間固定費(¥)</label>
-                    <input type="number" id="input-fixed" value="600000" class="w-full border p-2 rounded" oninput="updateDashboard()">
+                    <input type="number" id="input-fixed" value="600000" oninput="updateDashboard()">
                 </div>
             </div>
             <div class="card"><canvas id="bepChart" height="180"></canvas></div>
             <div class="grid grid-cols-2 gap-4 text-center">
-                <div class="bg-white p-4 rounded-xl shadow border-b-4 border-red-500"><p class="text-[10px] text-gray-500 font-bold">損益分岐点</p><p class="text-xl font-black" id="bep-count">0回</p></div>
-                <div class="bg-white p-4 rounded-xl shadow border-b-4 border-indigo-500"><p class="text-[10px] text-gray-500 font-bold">1日必要訪問数</p><p class="text-xl font-black" id="daily-target">0.0回</p></div>
+                <div class="bg-white p-4 rounded-xl shadow border-b-4 border-red-500"><p class="text-[10px] text-gray-500 font-bold uppercase">損益分岐点</p><p class="text-xl font-black" id="bep-count">0回</p></div>
+                <div class="bg-white p-4 rounded-xl shadow border-b-4 border-indigo-500"><p class="text-[10px] text-gray-500 font-bold uppercase">1日必要訪問数</p><p class="text-xl font-black" id="daily-target">0.0回</p></div>
             </div>
         </section>
 
@@ -101,12 +98,13 @@
                     <select id="new-type" class="w-full p-2 border rounded-md"><option value="medical">医療保険</option><option value="care">介護保険</option></select>
                     <input type="text" id="new-name" placeholder="加算名称" class="w-full p-2 border rounded-md">
                     <input type="number" id="new-price" placeholder="単価(円) or 単位" class="w-full p-2 border rounded-md">
-                    <select id="new-logic" class="w-full p-2 border rounded-md">
-                        <option value="per-visit">1訪問ごとに発生</option>
-                        <option value="once-month">月1回のみ発生</option>
-                        <option value="after-3">週3回(月12回)以降に発生</option>
+                    <select id="new-logic" class="w-full p-2 border rounded-md font-bold text-blue-700">
+                        <option value="per-visit">訪問の都度（全回数分）</option>
+                        <option value="limit-12">月12回(週3)まで計上</option>
+                        <option value="once-month">月1回のみ計上</option>
+                        <option value="after-12">13回目以降のみ計上</option>
                     </select>
-                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">保存</button>
+                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">保存して反映</button>
                 </div>
             </div>
             <div id="master-list-container" class="mt-4"></div>
@@ -117,7 +115,7 @@
     <script>
         let masterData = {
             medical: [
-                { name: '基本療養費(I)', price: 5550, logic: 'per-visit' },
+                { name: '基本療養費(I)', price: 5550, logic: 'limit-12' }, // デフォルトで週3回制限を適用
                 { name: '管理療養費(初回)', price: 7670, logic: 'once-month' },
                 { name: '24時間対応体制加算', price: 6800, logic: 'once-month' }
             ],
@@ -140,39 +138,37 @@
             container.innerHTML = '';
             masterData[type].forEach((item, idx) => {
                 const label = document.createElement('label');
-                label.className = 'flex items-center justify-between p-3 bg-white border rounded-lg mb-2 cursor-pointer';
+                label.className = 'flex items-center justify-between p-3 bg-white border rounded-lg mb-2 cursor-pointer active:bg-gray-100 transition';
                 label.innerHTML = `
                     <div class="flex flex-col">
                         <span class="text-sm font-bold">${item.name}</span>
-                        <span class="text-[10px] text-gray-400">${item.logic === 'per-visit' ? '訪問毎' : (item.logic === 'after-3' ? '12回目以降' : '月1回')}</span>
+                        <span class="text-[10px] text-indigo-500 font-bold">${getLogicName(item.logic)}</span>
                     </div>
-                    <input type="checkbox" class="w-5 h-5 item-check" data-idx="${idx}" onchange="calculate()">
+                    <input type="checkbox" class="w-6 h-6 item-check" data-idx="${idx}" onchange="calculate()">
                 `;
                 container.appendChild(label);
             });
             calculate();
         }
 
+        function getLogicName(logic) {
+            const names = { 'per-visit': '訪問毎', 'limit-12': '週3制限有', 'once-month': '月1回', 'after-12': '13回目以降' };
+            return names[logic] || '';
+        }
+
         function calculate() {
             const type = document.getElementById('calc-type').value;
             const ratio = parseFloat(document.getElementById('user-ratio').value);
-            const visits = parseInt(document.getElementById('slide-visit-count').value);
-            document.getElementById('val-visit-count').innerText = `${visits}回`;
+            const visits = parseInt(document.getElementById('input-visit-count').value) || 0;
 
             let total = 0;
-            const selectedChecks = document.querySelectorAll('.item-check:checked');
-            
-            selectedChecks.forEach(el => {
+            document.querySelectorAll('.item-check:checked').forEach(el => {
                 const item = masterData[type][el.dataset.idx];
-                if (item.logic === 'per-visit') {
-                    total += item.price * visits;
-                } else if (item.logic === 'once-month') {
-                    total += item.price;
-                } else if (item.logic === 'after-3') {
-                    // 週3回超過(月12回想定)のロジック
-                    if (visits > 12) {
-                        total += item.price * (visits - 12);
-                    }
+                switch(item.logic) {
+                    case 'per-visit': total += item.price * visits; break;
+                    case 'once-month': total += item.price; break;
+                    case 'limit-12': total += item.price * Math.min(visits, 12); break; // 13回目以降は加算しない
+                    case 'after-12': if(visits > 12) total += item.price * (visits - 12); break;
                 }
             });
 
@@ -183,7 +179,6 @@
             document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
         }
 
-        // ダッシュボード更新用
         let myChart;
         function updateDashboard() {
             const medP = parseInt(document.getElementById('input-med').value) || 0;
@@ -199,7 +194,7 @@
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line', data: { labels: ['0', 'BEP', 'Target'], datasets: [{ label: '収益', data: [0, fixed, fixed*1.5], borderColor: '#4f46e5', fill: true, backgroundColor: 'rgba(79, 70, 229, 0.1)' }, { label: '固定費', data: [fixed, fixed, fixed], borderColor: '#f87171', borderDash: [5,5] }] },
-                options: { plugins: { legend: { display: false } }, animation: false }
+                options: { plugins: { legend: { display: false } }, animation: false, scales: { y: { beginAtZero: true } } }
             });
         }
 
@@ -213,8 +208,8 @@
                 container.appendChild(title);
                 masterData[type].forEach((item, idx) => {
                     const d = document.createElement('div');
-                    d.className = 'flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-1 text-xs border-l-4 border-indigo-300';
-                    d.innerHTML = `<div><p class="font-bold">${item.name}</p><p class="text-[9px] text-gray-400">${item.logic}</p></div>
+                    d.className = 'flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-1 text-xs border-l-4 border-indigo-400';
+                    d.innerHTML = `<div><p class="font-bold">${item.name}</p><p class="text-[9px] text-gray-500">${getLogicName(item.logic)}</p></div>
                                    <div class="flex items-center gap-4"><span class="font-bold text-indigo-600">${item.price}</span>
                                    <button onclick="deleteItem('${type}', ${idx})" class="text-red-400 text-lg">×</button></div>`;
                     container.appendChild(d);
