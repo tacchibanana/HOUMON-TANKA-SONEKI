@@ -93,11 +93,6 @@
                 </div>
                 
                 <div class="space-y-4">
-                    <div class="hidden">
-                        <span id="res-normal">0</span>
-                        <span id="res-special">0</span>
-                    </div>
-
                     <div class="p-5 bg-slate-800 text-white rounded-2xl flex justify-between items-center print:text-black print:bg-slate-100">
                         <span class="text-sm font-black">合計の費用 (100%)</span>
                         <span class="text-3xl font-black" id="result-price">¥0</span>
@@ -106,11 +101,6 @@
                         <span class="text-lg font-black mb-1">あなたがお支払いする概算額</span>
                         <span class="text-6xl font-black" id="user-cost">¥0</span>
                     </div>
-                </div>
-
-                <div class="print-only mt-20 grid grid-cols-2 gap-16">
-                    <div class="border-b-2 border-black h-24 relative"><span class="text-xs font-bold absolute -top-6">ご説明者（印）</span></div>
-                    <div class="border-b-2 border-black h-24 relative"><span class="text-xs font-bold absolute -top-6">ご確認者様（署名）</span></div>
                 </div>
             </div>
         </section>
@@ -136,18 +126,30 @@
         </section>
 
         <section id="settings" class="tab-content no-print">
-            <h2 class="text-2xl font-black mb-6">マスタ設定</h2>
+            <h2 class="text-2xl font-black mb-6">システム設定</h2>
+            
+            <div class="card mb-8 border-indigo-500 border-4">
+                <h3 class="text-lg font-black mb-4 flex items-center gap-2">📍 地域区分設定 (介護保険)</h3>
+                <label class="text-xs font-bold text-gray-500 mb-2 block">1単位あたりの単価 (例: 福岡市 10.84)</label>
+                <div class="flex items-center gap-4">
+                    <input type="number" id="care-unit-price" value="10.84" step="0.01" class="text-3xl font-black text-indigo-700 bg-indigo-50" oninput="calculate()">
+                    <span class="text-xl font-black">円</span>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-4 leading-relaxed">※この数値は介護保険の費用計算時に「合計単位数」へ乗算されます。医療保険には影響しません。</p>
+            </div>
+
+            <h2 class="text-2xl font-black mb-6">マスタ項目追加</h2>
             <div class="card bg-gray-50 border-2 border-dashed">
                 <div class="space-y-4">
                     <select id="new-type" class="w-full p-4 border rounded-xl"><option value="medical">医療保険</option><option value="care">介護保険</option></select>
                     <input type="text" id="new-name" placeholder="名称" class="w-full p-4 border rounded-xl">
-                    <input type="number" id="new-price" placeholder="単価(円)" class="w-full p-4 border rounded-xl">
+                    <input type="number" id="new-price" placeholder="単価(単位/円)" class="w-full p-4 border rounded-xl">
                     <select id="new-logic" class="w-full p-4 border rounded-xl font-bold text-indigo-700">
                         <option value="per-visit">毎回計上</option>
                         <option value="once-month">月1回のみ</option>
                         <option value="after-2">2回目以降から</option>
                     </select>
-                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xl">保存する</button>
+                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xl">マスタに保存</button>
                 </div>
             </div>
             <div id="master-list-container" class="mt-8"></div>
@@ -160,11 +162,24 @@
                 { name: '基本療養費', price: 5550, logic: 'per-visit' },
                 { name: '管理療養費(初回)', price: 7670, logic: 'once-month' },
                 { name: '管理療養費(2回目以降)', price: 3000, logic: 'after-2' },
-                { name: '24時間対応体制加算', price: 6800, logic: 'once-month' }
+                { name: '24時間対応体制加算', price: 6800, logic: 'once-month' },
+                { name: '早朝・夜間訪問看護加算', price: 2100, logic: 'per-visit' },
+                { name: '深夜訪問看護加算', price: 4200, logic: 'per-visit' },
+                { name: '長時間訪問看護加算', price: 5200, logic: 'per-visit' },
+                { name: '複数名訪問看護加算', price: 4500, logic: 'per-visit' }
             ],
             care: [
-                { name: '基本(30-60分)', price: 823, logic: 'per-visit' },
-                { name: '緊急時訪問看護加算', price: 600, logic: 'once-month' }
+                { name: '訪問看護Ⅰ-3', price: 823, logic: 'per-visit' },
+                { name: '理学療法士等訪問看護Ⅰ-5', price: 794, logic: 'per-visit' },
+                { name: '緊急時訪問看護加算Ⅰ', price: 600, logic: 'once-month' },
+                { name: '長時間訪問看護加算(90分超)', price: 300, logic: 'per-visit' },
+                { name: '専門管理加算イ・ロ', price: 250, logic: 'once-month' },
+                { name: '特別管理加算Ⅰ', price: 500, logic: 'once-month' },
+                { name: '特別管理加算Ⅱ', price: 250, logic: 'once-month' },
+                { name: 'ターミナルケア加算', price: 2500, logic: 'once-month' },
+                { name: 'ターミナルケア加算初回Ⅰ', price: 350, logic: 'once-month' },
+                { name: 'ターミナルケア加算初回Ⅱ', price: 300, logic: 'once-month' },
+                { name: '退院時共同指導加算', price: 600, logic: 'once-month' }
             ]
         };
 
@@ -189,13 +204,13 @@
                 const label = document.createElement('div');
                 label.id = `item-row-${idx}`;
                 label.className = 'flex items-center justify-between p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-sm cursor-pointer';
-                const isChecked = (item.name.includes('基本') || item.name.includes('管理')) ? 'checked' : '';
+                const isChecked = (item.name.includes('基本') || item.name.includes('管理') || item.name.includes('訪問看護Ⅰ')) ? 'checked' : '';
                 label.innerHTML = `
                     <div class="flex items-center gap-5">
                         <input type="checkbox" class="w-6 h-6 item-check no-print" data-idx="${idx}" onchange="calculate()" ${isChecked}>
                         <span class="text-base font-black text-slate-700">${item.name}</span>
                     </div>
-                    <span class="text-lg font-bold text-slate-400 font-mono">¥${item.price.toLocaleString()}</span>
+                    <span class="text-lg font-bold text-slate-400 font-mono">${type === 'care' ? item.price + '単位' : '¥' + item.price.toLocaleString()}</span>
                 `;
                 label.onclick = (e) => {
                     if(e.target.type !== 'checkbox') {
@@ -215,6 +230,9 @@
             const visits = parseInt(document.getElementById('input-visit-count').value) || 0;
             const specialCount = parseInt(document.getElementById('input-special-count').value) || 0;
             const specialPrice = parseInt(document.getElementById('input-special-price').value) || 0;
+            
+            // 設定画面の地域区分単価を取得（デフォルト 10.84）
+            const careUnitPrice = parseFloat(document.getElementById('care-unit-price').value) || 10.84;
 
             document.getElementById('print-date').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
             document.getElementById('print-spec-count').innerText = specialCount + '回';
@@ -234,18 +252,17 @@
                 }
             });
 
-            if(type === 'care') normalTotal = Math.round(normalTotal * 10.7);
-            let specialTotal = specialCount * specialPrice;
-            if(type === 'care') specialTotal = Math.round(specialTotal * 10.7);
+            // 介護保険の場合のみ地域区分を乗算
+            if(type === 'care') {
+                normalTotal = Math.round(normalTotal * careUnitPrice);
+            }
 
+            let specialTotal = specialCount * specialPrice;
             const grandTotal = normalTotal + specialTotal;
             const userTotal = Math.floor(grandTotal * ratio);
 
-            // 要素が存在することを確認してから値をセット
-            if(document.getElementById('res-normal')) document.getElementById('res-normal').innerText = normalTotal;
-            if(document.getElementById('res-special')) document.getElementById('res-special').innerText = specialTotal;
-            if(document.getElementById('result-price')) document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
-            if(document.getElementById('user-cost')) document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
+            document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
+            document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
         }
 
         let myChart;
@@ -278,7 +295,7 @@
                 masterData[type].forEach((item, idx) => {
                     const d = document.createElement('div');
                     d.className = 'flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm mb-3 border-l-8 border-indigo-600';
-                    d.innerHTML = `<div><p class="font-black text-base">${item.name}</p><p class="text-[10px] text-gray-400">${item.logic}</p></div><div class="flex items-center gap-4"><span class="font-black text-indigo-700 text-lg">¥${item.price.toLocaleString()}</span><button onclick="deleteItem('${type}', ${idx})" class="text-red-400 font-black text-2xl px-2">×</button></div>`;
+                    d.innerHTML = `<div><p class="font-black text-base">${item.name}</p><p class="text-[10px] text-gray-400">${item.logic}</p></div><div class="flex items-center gap-4"><span class="font-black text-indigo-700 text-lg">${type === 'care' ? item.price + '単位' : '¥' + item.price.toLocaleString()}</span><button onclick="deleteItem('${type}', ${idx})" class="text-red-400 font-black text-2xl px-2">×</button></div>`;
                     container.appendChild(d);
                 });
             });
