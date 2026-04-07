@@ -163,9 +163,15 @@
                 { name: '管理療養費(初回)', price: 7670, logic: 'once-month' },
                 { name: '管理療養費(2回目以降)', price: 3000, logic: 'after-2' },
                 { name: '24時間対応体制加算', price: 6800, logic: 'once-month' },
+                { name: '特別管理加算Ⅰ', price: 5000, logic: 'once-month' },
+                { name: '特別管理加算Ⅱ', price: 2500, logic: 'once-month' },
+                { name: '在宅患者連携指導加算', price: 3000, logic: 'once-month' },
+                { name: '退院時共同指導加算', price: 8000, logic: 'once-month' },
+                { name: '特別管理指導加算', price: 2000, logic: 'once-month' },
+                { name: '退院支援指導加算', price: 6000, logic: 'once-month' },
+                { name: '訪問看護ターミナルケア療養費', price: 25000, logic: 'once-month' },
                 { name: '早朝・夜間訪問看護加算', price: 2100, logic: 'per-visit' },
                 { name: '深夜訪問看護加算', price: 4200, logic: 'per-visit' },
-                { name: '長時間訪問看護加算', price: 5200, logic: 'per-visit' },
                 { name: '複数名訪問看護加算', price: 4500, logic: 'per-visit' }
             ],
             care: [
@@ -177,8 +183,6 @@
                 { name: '特別管理加算Ⅰ', price: 500, logic: 'once-month' },
                 { name: '特別管理加算Ⅱ', price: 250, logic: 'once-month' },
                 { name: 'ターミナルケア加算', price: 2500, logic: 'once-month' },
-                { name: 'ターミナルケア加算初回Ⅰ', price: 350, logic: 'once-month' },
-                { name: 'ターミナルケア加算初回Ⅱ', price: 300, logic: 'once-month' },
                 { name: '退院時共同指導加算', price: 600, logic: 'once-month' }
             ]
         };
@@ -231,7 +235,6 @@
             const specialCount = parseInt(document.getElementById('input-special-count').value) || 0;
             const specialPrice = parseInt(document.getElementById('input-special-price').value) || 0;
             
-            // 設定画面の地域区分単価を取得（デフォルト 10.84）
             const careUnitPrice = parseFloat(document.getElementById('care-unit-price').value) || 10.84;
 
             document.getElementById('print-date').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
@@ -252,7 +255,6 @@
                 }
             });
 
-            // 介護保険の場合のみ地域区分を乗算
             if(type === 'care') {
                 normalTotal = Math.round(normalTotal * careUnitPrice);
             }
