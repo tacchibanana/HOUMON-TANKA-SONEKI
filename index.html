@@ -8,18 +8,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f3f4f6; color: #1a202c; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f3f4f6; color: #1a202c; padding-bottom: 100px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .card { background: white; border-radius: 20px; border: 2px solid #e2e8f0; padding: 24px; margin-bottom: 24px; }
-        input[type="number"] { border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px; width: 100%; font-size: 1.5rem; font-weight: 900; text-align: center; color: #1e293b; }
+        input[type="number"], input[type="text"], select { border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px; width: 100%; font-size: 1.2rem; font-weight: 900; text-align: center; color: #1e293b; }
+        
+        .item-count-input { width: 60px !important; font-size: 1.1rem !important; padding: 4px !important; margin: 0 4px; }
+        .btn-mini { width: 32px; height: 32px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: bold; }
+
+        .master-price-input { width: 100px !important; text-align: right !important; font-size: 1rem !important; padding: 8px !important; }
+
+        #signature-pad { border: 2px dashed #cbd5e1; border-radius: 12px; background: #fff; cursor: crosshair; touch-action: none; width: 100%; height: 150px; }
+
         @media print {
-            nav, .no-print, button, #settings, #dash { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .card { border: 2px solid #000 !important; box-shadow: none !important; margin: 0 !important; padding: 15px !important; }
+            @page { size: A4; margin: 10mm; }
+            nav, footer, .no-print, button, #settings, #dash { display: none !important; }
+            body { background: white !important; padding: 0 !important; color: black !important; }
+            .card { border: 2px solid #000 !important; box-shadow: none !important; margin: 0 0 10px 0 !important; padding: 12px !important; page-break-inside: auto; }
             .max-w-lg { max-width: 100% !important; }
             .print-only { display: block !important; }
-            .item-checked { display: flex !important; border-bottom: 1px solid #eee; padding: 10px 0; }
+            [id^="item-row-"] { display: none !important; }
+            [id^="item-row-"].item-checked { display: flex !important; border: none !important; border-bottom: 1px solid #ddd !important; padding: 6px 0 !important; background: none !important; }
+            .signature-area { page-break-inside: avoid; margin-top: 15px; }
+            #signature-pad { border: 1px solid #000 !important; height: 120px !important; }
         }
         .print-only { display: none; }
     </style>
@@ -33,11 +45,12 @@
     </nav>
 
     <div class="p-4 max-w-lg mx-auto">
-        <div class="print-only mb-8 border-b-4 border-black pb-4 text-center">
+        <div class="print-only mb-6 border-b-4 border-black pb-2 text-center">
             <h1 class="text-3xl font-black">訪問看護 費用概算お見積書</h1>
-            <p class="text-right mt-4 font-bold text-lg">作成日: <span id="print-date"></span></p>
+            <p class="text-right mt-2 font-bold text-base">作成日: <span id="print-date"></span></p>
         </div>
 
+        <!-- 費用計算タブ -->
         <section id="calc" class="tab-content active">
             <div class="flex justify-between items-center mb-6 no-print">
                 <h2 class="text-2xl font-black text-[#1e293b]">費用を計算する</h2>
@@ -63,25 +76,25 @@
                     </div>
                 </div>
 
-                <div class="p-6 bg-slate-50 rounded-2xl mb-6 border-2 border-slate-200 print:bg-white print:border-black">
-                    <label class="text-base font-black text-slate-800 mb-3 block text-center">① ひと月の訪問回数</label>
+                <div class="p-6 bg-slate-50 rounded-2xl mb-6 border-2 border-slate-200 print:bg-white print:border-black print:p-4">
+                    <label class="text-base font-black text-slate-800 mb-3 block text-center">① ひと月の訪問回数（基本）</label>
                     <div class="flex items-center gap-6">
-                        <button onclick="adjustVal('input-visit-count', -1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">-</button>
-                        <input type="number" id="input-visit-count" value="12" min="0" class="flex-1 text-4xl print:text-5xl" oninput="calculate()">
-                        <button onclick="adjustVal('input-visit-count', 1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">+</button>
+                        <button onclick="adjustBaseVisit(-1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">-</button>
+                        <input type="number" id="input-visit-count" value="12" min="0" class="flex-1 text-4xl print:text-5xl" oninput="syncAndCalc()">
+                        <button onclick="adjustBaseVisit(1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">+</button>
                     </div>
                     <div class="mt-8">
-                        <p class="text-xs font-black text-slate-400 mb-4 border-b-2 border-slate-200 pb-1 uppercase tracking-widest">含まれる費用・加算項目</p>
-                        <div id="calc-items" class="space-y-4"></div>
+                        <p class="text-xs font-black text-slate-400 mb-4 border-b-2 border-slate-200 pb-1 uppercase tracking-widest">算定項目ごとの回数調整</p>
+                        <div id="calc-items" class="space-y-3"></div>
                     </div>
                 </div>
 
-                <div class="p-6 bg-orange-50 rounded-2xl mb-8 border-2 border-orange-100 print:bg-white print:border-black">
+                <div class="p-6 bg-orange-50 rounded-2xl mb-8 border-2 border-orange-100 print:bg-white print:border-black print:p-4 print:mb-4">
                     <label class="text-base font-black text-orange-900 mb-4 block text-center">② 特別指示（連日訪問など）</label>
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <p class="text-xs font-bold text-orange-600 mb-1">指示期間の回数</p>
-                            <input type="number" id="input-special-count" value="8" min="0" class="no-print" oninput="calculate()">
+                            <input type="number" id="input-special-count" value="0" min="0" class="no-print" oninput="calculate()">
                             <span class="print-only text-3xl font-black" id="print-spec-count"></span>
                         </div>
                         <div>
@@ -92,69 +105,108 @@
                     </div>
                 </div>
                 
-                <div class="space-y-4">
-                    <div class="p-5 bg-slate-800 text-white rounded-2xl flex justify-between items-center print:text-black print:bg-slate-100">
+                <div class="space-y-4 mb-8 print:mb-4">
+                    <div class="p-5 bg-slate-800 text-white rounded-2xl flex justify-between items-center print:text-black print:bg-slate-100 print:p-3">
                         <span class="text-sm font-black">合計の費用 (100%)</span>
                         <span class="text-3xl font-black" id="result-price">¥0</span>
                     </div>
-                    <div class="p-8 bg-orange-600 text-white rounded-2xl flex flex-col items-center shadow-2xl print:text-black print:bg-white print:border-8 print:border-orange-600">
+                    <div class="p-8 bg-orange-600 text-white rounded-2xl flex flex-col items-center shadow-2xl print:text-black print:bg-white print:border-4 print:border-orange-600 print:p-4">
                         <span class="text-lg font-black mb-1">あなたがお支払いする概算額</span>
                         <span class="text-6xl font-black" id="user-cost">¥0</span>
                     </div>
                 </div>
+
+                <div class="mt-10 pt-6 border-t-2 border-slate-100 signature-area">
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="text-sm font-black text-slate-500">ご署名 / 確認印</label>
+                        <button onclick="clearSignature()" class="no-print text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100">書き直す</button>
+                    </div>
+                    <canvas id="signature-pad"></canvas>
+                    <p class="text-[10px] text-gray-400 mt-2 text-center">上記内容について確認いたしました。</p>
+                </div>
             </div>
         </section>
 
+        <!-- 分析DBタブ -->
         <section id="dash" class="tab-content no-print">
-            <h2 class="text-2xl font-black mb-6">経営分析 (毎日稼働)</h2>
+            <h2 class="text-2xl font-black mb-6">経営シミュレーション</h2>
             <div class="card space-y-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-blue-600 mb-1 block">医療単価</label><input type="number" id="input-med" value="8500" oninput="updateDashboard()"></div>
-                    <div><label class="text-xs font-bold text-green-600 mb-1 block">介護単価</label><input type="number" id="input-care" value="9000" oninput="updateDashboard()"></div>
+                    <div><label class="text-xs font-bold text-blue-600 mb-1 block">平均単価 (医療)</label><input type="number" id="input-med" value="8500" oninput="updateDashboard()"></div>
+                    <div><label class="text-xs font-bold text-green-600 mb-1 block">平均単価 (介護)</label><input type="number" id="input-care" value="9000" oninput="updateDashboard()"></div>
                 </div>
                 <div>
                     <div class="flex justify-between mb-2 text-sm font-bold"><label>医療 : 介護 比率</label><span id="val-ratio">50% : 50%</span></div>
                     <input type="range" id="slide-ratio" min="0" max="100" step="5" value="50" class="w-full h-3 bg-gray-200 rounded-lg appearance-none accent-indigo-600" oninput="updateDashboard()">
                 </div>
-                <div><label class="text-xs font-bold text-red-600 mb-1 block">月間固定費</label><input type="number" id="input-fixed" value="1200000" oninput="updateDashboard()"></div>
+                <div><label class="text-xs font-bold text-red-600 mb-1 block">月間固定費（人件費・賃料等）</label><input type="number" id="input-fixed" value="1200000" oninput="updateDashboard()"></div>
+                
+                <div class="pt-4 border-t border-slate-100">
+                    <div class="flex justify-between mb-2 text-sm font-bold"><label class="text-orange-600">利益目標（固定費に対する比率）</label><span id="val-profit-target" class="text-orange-600">10%</span></div>
+                    <input type="range" id="slide-profit-target" min="0" max="50" step="5" value="10" class="w-full h-3 bg-orange-100 rounded-lg appearance-none accent-orange-600" oninput="updateDashboard()">
+                </div>
             </div>
+
             <div class="grid grid-cols-2 gap-4 text-center mb-6">
-                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-red-500"><p class="text-xs font-bold text-gray-400">損益分岐点</p><p class="text-3xl font-black" id="bep-count">0回</p></div>
-                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-indigo-500"><p class="text-xs font-bold text-gray-400">1日目標</p><p class="text-3xl font-black" id="daily-target">0.0回</p></div>
+                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-slate-400"><p class="text-xs font-bold text-gray-400">損益分岐点</p><p class="text-3xl font-black" id="bep-count">0回</p></div>
+                <div class="bg-white p-6 rounded-2xl shadow border-b-8 border-orange-500"><p class="text-xs font-bold text-gray-400">目標達成回数</p><p class="text-3xl font-black text-orange-600" id="target-count">0回</p></div>
             </div>
-            <div class="card"><canvas id="bepChart" height="200"></canvas></div>
+
+            <div class="card">
+                <p class="text-xs font-bold text-gray-400 mb-4">収益シミュレーション（横軸：訪問回数）</p>
+                <div class="relative h-[250px]">
+                    <canvas id="bepChart"></canvas>
+                </div>
+            </div>
         </section>
 
+        <!-- 設定タブ -->
         <section id="settings" class="tab-content no-print">
-            <h2 class="text-2xl font-black mb-6">システム設定</h2>
+            <h2 class="text-2xl font-black mb-6">設定</h2>
             
             <div class="card mb-8 border-indigo-500 border-4">
-                <h3 class="text-lg font-black mb-4 flex items-center gap-2">📍 地域区分設定 (介護保険)</h3>
-                <label class="text-xs font-bold text-gray-500 mb-2 block">1単位あたりの単価 (例: 福岡市 10.84)</label>
-                <div class="flex items-center gap-4">
-                    <input type="number" id="care-unit-price" value="10.84" step="0.01" class="text-3xl font-black text-indigo-700 bg-indigo-50" oninput="calculate()">
-                    <span class="text-xl font-black">円</span>
-                </div>
-                <p class="text-[10px] text-gray-400 mt-4 leading-relaxed">※この数値は介護保険の費用計算時に「合計単位数」へ乗算されます。医療保険には影響しません。</p>
+                <h3 class="text-lg font-black mb-4 flex items-center gap-2">📍 地域区分設定</h3>
+                <input type="number" id="care-unit-price" value="10.84" step="0.01" class="text-3xl font-black text-indigo-700 bg-indigo-50" oninput="calculate()">
             </div>
 
-            <h2 class="text-2xl font-black mb-6">マスタ項目追加</h2>
-            <div class="card bg-gray-50 border-2 border-dashed">
+            <!-- 新規項目追加フォーム -->
+            <div class="card mb-8 border-green-500 border-2">
+                <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-green-700">➕ 算定項目の追加</h3>
                 <div class="space-y-4">
-                    <select id="new-type" class="w-full p-4 border rounded-xl"><option value="medical">医療保険</option><option value="care">介護保険</option></select>
-                    <input type="text" id="new-name" placeholder="名称" class="w-full p-4 border rounded-xl">
-                    <input type="number" id="new-price" placeholder="単価(単位/円)" class="w-full p-4 border rounded-xl">
-                    <select id="new-logic" class="w-full p-4 border rounded-xl font-bold text-indigo-700">
-                        <option value="per-visit">毎回計上</option>
-                        <option value="once-month">月1回のみ</option>
-                        <option value="after-2">2回目以降から</option>
+                    <select id="add-item-type" class="w-full text-base p-3 font-bold text-green-900 bg-green-50">
+                        <option value="medical">医療保険に追加</option>
+                        <option value="care">介護保険に追加</option>
                     </select>
-                    <button onclick="addItem()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xl">マスタに保存</button>
+                    <input type="text" id="add-item-name" placeholder="項目名（例：緊急時訪問看護加算）" class="w-full text-base font-bold text-left">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="add-item-price" placeholder="単価（円/単位）" class="w-full text-base">
+                        <select id="add-item-logic" class="w-full text-base p-3 font-bold">
+                            <option value="per-visit">訪問ごと</option>
+                            <option value="once-month">月1回</option>
+                            <option value="after-2">2回目以降</option>
+                        </select>
+                    </div>
+                    <button onclick="addNewMasterItem()" class="w-full bg-green-600 text-white font-black py-3 rounded-xl hover:bg-green-700 transition-all">マスタに登録する</button>
                 </div>
             </div>
+
+            <!-- マスタ一覧 -->
             <div id="master-list-container" class="mt-8"></div>
         </section>
     </div>
+
+    <footer id="result-footer" class="fixed bottom-0 left-0 w-full bg-[#1e293b] text-white p-4 shadow-xl z-40 no-print">
+        <div class="max-w-lg mx-auto flex justify-between items-center px-2">
+            <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">合計 (100%)</span>
+                <span class="text-xl font-black" id="footer-result-price">¥0</span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-[10px] font-bold text-orange-400 uppercase tracking-widest">自己負担額</span>
+                <span class="text-3xl font-black text-orange-400" id="footer-user-cost">¥0</span>
+            </div>
+        </div>
+    </footer>
 
     <script>
         let masterData = {
@@ -187,43 +239,116 @@
             ]
         };
 
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        function initSignaturePad() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.lineWidth = 2;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "#1e293b";
+        }
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+        canvas.addEventListener('mousedown', (e) => { drawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); });
+        canvas.addEventListener('mousemove', (e) => { if (!drawing) return; const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); });
+        canvas.addEventListener('mouseup', () => { drawing = false; });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (!drawing) return; const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); }, { passive: false });
+        canvas.addEventListener('touchend', () => { drawing = false; });
+        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
+            const footer = document.getElementById('result-footer');
+            if (tabId === 'calc') footer.classList.remove('hidden');
+            else footer.classList.add('hidden');
             if(tabId === 'dash') updateDashboard();
             calculate();
         }
 
-        function adjustVal(id, amount) {
-            const el = document.getElementById(id);
+        // --- マスタ追加・編集・削除機能 ---
+        function addNewMasterItem() {
+            const type = document.getElementById('add-item-type').value;
+            const name = document.getElementById('add-item-name').value;
+            const price = parseInt(document.getElementById('add-item-price').value);
+            const logic = document.getElementById('add-item-logic').value;
+
+            if(!name || isNaN(price)) {
+                alert("項目名と単価を正しく入力してください");
+                return;
+            }
+
+            masterData[type].push({ name, price, logic });
+            
+            // フォームリセット
+            document.getElementById('add-item-name').value = '';
+            document.getElementById('add-item-price').value = '';
+            
+            renderMaster();
+            alert("マスタに追加しました");
+        }
+
+        function deleteMasterItem(type, idx) {
+            if(confirm("この項目を削除してもよろしいですか？")) {
+                masterData[type].splice(idx, 1);
+                renderMaster();
+            }
+        }
+
+        function updateMasterValue(type, idx, val) {
+            masterData[type][idx].price = parseInt(val) || 0;
+            renderCalcItems(); // 単価変更を費用計算画面に反映
+        }
+        // ----------------------------------
+
+        function adjustBaseVisit(amount) {
+            const el = document.getElementById('input-visit-count');
+            el.value = Math.max(0, parseInt(el.value) + amount);
+            syncAndCalc();
+        }
+        function adjustItemCount(idx, amount) {
+            const el = document.getElementById(`item-count-${idx}`);
             el.value = Math.max(0, parseInt(el.value) + amount);
             calculate();
         }
-
+        function syncAndCalc() {
+            const baseVisits = parseInt(document.getElementById('input-visit-count').value) || 0;
+            const type = document.getElementById('calc-type').value;
+            masterData[type].forEach((item, idx) => {
+                const countInput = document.getElementById(`item-count-${idx}`);
+                if (!countInput) return;
+                if (item.logic === 'per-visit') countInput.value = baseVisits;
+                else if (item.logic === 'once-month') countInput.value = baseVisits > 0 ? 1 : 0;
+                else if (item.logic === 'after-2') countInput.value = Math.max(0, baseVisits - 1);
+            });
+            calculate();
+        }
         function renderCalcItems() {
             const type = document.getElementById('calc-type').value;
             const container = document.getElementById('calc-items');
+            const baseVisits = parseInt(document.getElementById('input-visit-count').value) || 0;
             container.innerHTML = '';
             masterData[type].forEach((item, idx) => {
-                const label = document.createElement('div');
-                label.id = `item-row-${idx}`;
-                label.className = 'flex items-center justify-between p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-sm cursor-pointer';
+                const row = document.createElement('div');
+                row.id = `item-row-${idx}`;
+                row.className = 'flex items-center justify-between p-3 bg-white border-2 border-slate-100 rounded-2xl shadow-sm transition-all';
+                let initialCount = 0;
+                if (item.logic === 'per-visit') initialCount = baseVisits;
+                else if (item.logic === 'once-month') initialCount = baseVisits > 0 ? 1 : 0;
+                else if (item.logic === 'after-2') initialCount = Math.max(0, baseVisits - 1);
                 const isChecked = (item.name.includes('基本') || item.name.includes('管理') || item.name.includes('訪問看護Ⅰ')) ? 'checked' : '';
-                label.innerHTML = `
-                    <div class="flex items-center gap-5">
-                        <input type="checkbox" class="w-6 h-6 item-check no-print" data-idx="${idx}" onchange="calculate()" ${isChecked}>
-                        <span class="text-base font-black text-slate-700">${item.name}</span>
-                    </div>
-                    <span class="text-lg font-bold text-slate-400 font-mono">${type === 'care' ? item.price + '単位' : '¥' + item.price.toLocaleString()}</span>
-                `;
-                label.onclick = (e) => {
-                    if(e.target.type !== 'checkbox') {
-                        const cb = label.querySelector('input');
-                        cb.checked = !cb.checked;
-                        calculate();
-                    }
-                };
-                container.appendChild(label);
+                row.innerHTML = `<div class="flex items-center gap-3 flex-1"><input type="checkbox" class="w-5 h-5 item-check no-print" data-idx="${idx}" onchange="calculate()" ${isChecked}><div class="flex flex-col"><span class="text-sm font-black text-slate-700 leading-tight">${item.name}</span><span class="text-[10px] text-slate-400 font-bold">${type === 'care' ? item.price + '単位' : '¥' + item.price.toLocaleString()}</span></div></div><div class="flex items-center no-print"><button onclick="adjustItemCount(${idx}, -1)" class="btn-mini">-</button><input type="number" id="item-count-${idx}" value="${initialCount}" class="item-count-input" oninput="calculate()"><button onclick="adjustItemCount(${idx}, 1)" class="btn-mini">+</button></div><div class="print-only ml-4 font-bold">× <span id="print-count-${idx}">${initialCount}</span>回</div>`;
+                container.appendChild(row);
             });
             calculate();
         }
@@ -231,40 +356,31 @@
         function calculate() {
             const type = document.getElementById('calc-type').value;
             const ratio = parseFloat(document.getElementById('user-ratio').value);
-            const visits = parseInt(document.getElementById('input-visit-count').value) || 0;
             const specialCount = parseInt(document.getElementById('input-special-count').value) || 0;
             const specialPrice = parseInt(document.getElementById('input-special-price').value) || 0;
-            
             const careUnitPrice = parseFloat(document.getElementById('care-unit-price').value) || 10.84;
-
             document.getElementById('print-date').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
             document.getElementById('print-spec-count').innerText = specialCount + '回';
             document.getElementById('print-spec-price').innerText = '¥' + specialPrice.toLocaleString();
-
             let normalTotal = 0;
             document.querySelectorAll('.item-check').forEach((el) => {
-                const item = masterData[type][el.dataset.idx];
-                const row = document.getElementById(`item-row-${el.dataset.idx}`);
-                if(el.checked) {
-                    row.classList.add('item-checked', 'border-indigo-500', 'bg-indigo-50');
-                    if(item.logic === 'per-visit') normalTotal += item.price * visits;
-                    else if(item.logic === 'once-month') normalTotal += item.price;
-                    else if(item.logic === 'after-2' && visits >= 2) normalTotal += item.price * (visits - 1);
-                } else {
-                    row.classList.remove('item-checked', 'border-indigo-500', 'bg-indigo-50');
-                }
+                const idx = el.dataset.idx;
+                const item = masterData[type][idx];
+                const row = document.getElementById(`item-row-${idx}`);
+                const count = parseInt(document.getElementById(`item-count-${idx}`).value) || 0;
+                
+                // 印刷用回数表示を更新
+                const printCountSpan = document.getElementById(`print-count-${idx}`);
+                if (printCountSpan) printCountSpan.innerText = count;
+
+                if(el.checked) { row.classList.add('item-checked'); normalTotal += item.price * count; } else { row.classList.remove('item-checked'); }
             });
-
-            if(type === 'care') {
-                normalTotal = Math.round(normalTotal * careUnitPrice);
-            }
-
-            let specialTotal = specialCount * specialPrice;
-            const grandTotal = normalTotal + specialTotal;
-            const userTotal = Math.floor(grandTotal * ratio);
-
+            if(type === 'care') normalTotal = Math.round(normalTotal * careUnitPrice);
+            let grandTotal = normalTotal + (specialCount * specialPrice);
             document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
-            document.getElementById('user-cost').innerText = `¥${userTotal.toLocaleString()}`;
+            document.getElementById('user-cost').innerText = `¥${Math.floor(grandTotal * ratio).toLocaleString()}`;
+            document.getElementById('footer-result-price').innerText = `¥${grandTotal.toLocaleString()}`;
+            document.getElementById('footer-user-cost').innerText = `¥${Math.floor(grandTotal * ratio).toLocaleString()}`;
         }
 
         let myChart;
@@ -273,19 +389,61 @@
             const careP = parseInt(document.getElementById('input-care').value) || 0;
             const ratio = parseInt(document.getElementById('slide-ratio').value);
             const fixed = parseInt(document.getElementById('input-fixed').value) || 0;
+            const profitTargetPercent = parseInt(document.getElementById('slide-profit-target').value);
+
             document.getElementById('val-ratio').innerText = `${ratio}% : ${100-ratio}%`;
+            document.getElementById('val-profit-target').innerText = `${profitTargetPercent}%`;
+
             const avgPrice = (medP * (ratio/100)) + (careP * ((100-ratio)/100));
+            
             const bep = avgPrice > 0 ? Math.ceil(fixed / avgPrice) : 0;
+            const targetProfitVal = fixed * (1 + (profitTargetPercent / 100));
+            const targetCount = avgPrice > 0 ? Math.ceil(targetProfitVal / avgPrice) : 0;
+
             document.getElementById('bep-count').innerText = `${bep.toLocaleString()}回`;
-            document.getElementById('daily-target').innerText = `${(bep / 30.4).toFixed(1)}回`;
+            document.getElementById('target-count').innerText = `${targetCount.toLocaleString()}回`;
+
+            const maxVisits = Math.max(targetCount * 1.5, 300);
+            const step = Math.ceil(maxVisits / 10);
+            
+            const labels = [];
+            const revenueData = [];
+            const fixedCostData = [];
+            const targetProfitLineData = [];
+
+            for (let i = 0; i <= 10; i++) {
+                const visitVal = i * step;
+                labels.push(visitVal);
+                revenueData.push(visitVal * avgPrice);
+                fixedCostData.push(fixed);
+                targetProfitLineData.push(targetProfitVal);
+            }
+
             const ctx = document.getElementById('bepChart').getContext('2d');
             if(myChart) myChart.destroy();
+            
             myChart = new Chart(ctx, {
-                type: 'line', data: { labels: ['0', '損益分岐点', '目標'], datasets: [{ label: '収益', data: [0, fixed, fixed*1.5], borderColor: '#4338ca', borderWidth: 6, fill: true, backgroundColor: 'rgba(67, 56, 202, 0.05)' }, { label: '固定費', data: [fixed, fixed, fixed], borderColor: '#ef4444', borderDash: [5,5], borderWidth: 3 }] },
-                options: { plugins: { legend: { display: false } }, animation: false, scales: { y: { display: false } } }
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '予測収益', data: revenueData, borderColor: '#4338ca', backgroundColor: 'rgba(67, 56, 202, 0.1)', borderWidth: 4, fill: true, tension: 0.1 },
+                        { label: '損益分岐点', data: fixedCostData, borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointStyle: false },
+                        { label: '利益目標', data: targetProfitLineData, borderColor: '#f97316', borderDash: [10, 5], borderWidth: 2, pointStyle: false }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } }, tooltip: { mode: 'index', intersect: false } },
+                    scales: {
+                        x: { title: { display: true, text: '月間訪問回数', font: { size: 10 } } },
+                        y: { beginAtZero: true, ticks: { callback: (value) => '¥' + (value / 10000) + '万', font: { size: 10 } } }
+                    }
+                }
             });
         }
 
+        // マスタリスト表示を単価編集・削除に対応
         function renderMaster() {
             const container = document.getElementById('master-list-container');
             container.innerHTML = '';
@@ -294,36 +452,32 @@
                 title.className = 'text-xs font-black text-gray-400 mt-8 mb-4 uppercase tracking-widest';
                 title.innerText = type === 'medical' ? '医療保険マスタ' : '介護保険マスタ';
                 container.appendChild(title);
+
                 masterData[type].forEach((item, idx) => {
                     const d = document.createElement('div');
-                    d.className = 'flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm mb-3 border-l-8 border-indigo-600';
-                    d.innerHTML = `<div><p class="font-black text-base">${item.name}</p><p class="text-[10px] text-gray-400">${item.logic}</p></div><div class="flex items-center gap-4"><span class="font-black text-indigo-700 text-lg">${type === 'care' ? item.price + '単位' : '¥' + item.price.toLocaleString()}</span><button onclick="deleteItem('${type}', ${idx})" class="text-red-400 font-black text-2xl px-2">×</button></div>`;
+                    d.className = 'flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-3 border-l-8 border-indigo-600';
+                    d.innerHTML = `
+                        <div class="flex-1 pr-2">
+                            <p class="font-black text-sm">${item.name}</p>
+                            <p class="text-[10px] text-gray-400">${item.logic === 'per-visit' ? '訪問ごと' : item.logic === 'once-month' ? '月1回' : '2回目以降'}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" value="${item.price}" class="master-price-input text-indigo-700 bg-indigo-50 font-black border-2 border-indigo-200 rounded-xl" onchange="updateMasterValue('${type}', ${idx}, this.value)">
+                            <span class="text-xs font-bold text-gray-500">${type === 'care' ? '単位' : '円'}</span>
+                            <button onclick="deleteMasterItem('${type}', ${idx})" class="text-white bg-red-500 rounded-lg p-2 ml-2 hover:bg-red-600 font-bold text-xs shadow-sm">削除</button>
+                        </div>`;
                     container.appendChild(d);
                 });
             });
-            renderCalcItems();
-        }
-
-        function addItem() {
-            const type = document.getElementById('new-type').value;
-            const name = document.getElementById('new-name').value;
-            const price = parseInt(document.getElementById('new-price').value);
-            const logic = document.getElementById('new-logic').value;
-            if(!name || isNaN(price)) return;
-            masterData[type].push({ name, price, logic });
-            renderMaster();
-            document.getElementById('new-name').value = '';
-            document.getElementById('new-price').value = '';
-        }
-
-        function deleteItem(type, idx) {
-            if(confirm('削除しますか？')) { masterData[type].splice(idx, 1); renderMaster(); }
+            renderCalcItems(); // マスタの変更に合わせて計算画面を再描画
         }
 
         window.onload = function() {
             renderMaster();
             updateDashboard();
+            initSignaturePad();
         };
+        window.onresize = initSignaturePad;
     </script>
 </body>
 </html>
