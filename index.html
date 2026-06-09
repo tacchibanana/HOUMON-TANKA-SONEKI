@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪問看護費用シミュレーター</title>
+    <title>訪問看護費用シミュレーター (令和8年度改定対応版)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -30,6 +30,7 @@
             .print-only { display: block !important; }
             [id^="item-row-"] { display: none !important; }
             [id^="item-row-"].item-checked { display: flex !important; border: none !important; border-bottom: 1px solid #ddd !important; padding: 6px 0 !important; background: none !important; }
+            #shogu-calc-row { display: flex !important; border: none !important; border-b-2 border-black !important; padding: 8px 0 !important; font-weight: bold; }
             .signature-area { page-break-inside: avoid; margin-top: 15px; }
             #signature-pad { border: 1px solid #000 !important; height: 120px !important; }
         }
@@ -50,7 +51,6 @@
             <p class="text-right mt-2 font-bold text-base">作成日: <span id="print-date"></span></p>
         </div>
 
-        <!-- 費用計算タブ -->
         <section id="calc" class="tab-content active">
             <div class="flex justify-between items-center mb-6 no-print">
                 <h2 class="text-2xl font-black text-[#1e293b]">費用を計算する</h2>
@@ -83,9 +83,21 @@
                         <input type="number" id="input-visit-count" value="12" min="0" class="flex-1 text-4xl print:text-5xl" oninput="syncAndCalc()">
                         <button onclick="adjustBaseVisit(1)" class="no-print w-14 h-14 bg-white border-2 border-slate-300 rounded-full font-black text-3xl shadow-sm">+</button>
                     </div>
+                    
                     <div class="mt-8">
                         <p class="text-xs font-black text-slate-400 mb-4 border-b-2 border-slate-200 pb-1 uppercase tracking-widest">算定項目ごとの回数調整</p>
                         <div id="calc-items" class="space-y-3"></div>
+                        
+                        <!-- 処遇改善・ベースアップ評価料の表示領域 -->
+                        <div id="shogu-calc-row" class="hidden items-center justify-between p-3 mt-4 bg-amber-50 border-2 border-amber-200 rounded-2xl shadow-sm print:bg-white print:border-none">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-black text-amber-900 leading-tight" id="shogu-title-label">処遇改善加算等</span>
+                                <span class="text-[10px] text-amber-600 font-bold" id="shogu-rate-label">加算率: 0%</span>
+                            </div>
+                            <div class="font-black text-slate-700 text-sm print:text-black">
+                                <span id="shogu-value-label">+ 0 単位</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -119,7 +131,7 @@
                 <div class="mt-10 pt-6 border-t-2 border-slate-100 signature-area">
                     <div class="flex justify-between items-end mb-2">
                         <label class="text-sm font-black text-slate-500">ご署名 / 確認印</label>
-                        <button onclick="clearSignature()" class="no-print text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100">書き直す</button>
+                        <button onclick="clearSignature()" class="no-print text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100">書き重す</button>
                     </div>
                     <canvas id="signature-pad"></canvas>
                     <p class="text-[10px] text-gray-400 mt-2 text-center">上記内容について確認いたしました。</p>
@@ -127,7 +139,6 @@
             </div>
         </section>
 
-        <!-- 分析DBタブ -->
         <section id="dash" class="tab-content no-print">
             <h2 class="text-2xl font-black mb-6">経営シミュレーション</h2>
             <div class="card space-y-6">
@@ -160,16 +171,53 @@
             </div>
         </section>
 
-        <!-- 設定タブ -->
         <section id="settings" class="tab-content no-print">
             <h2 class="text-2xl font-black mb-6">設定</h2>
             
-            <div class="card mb-8 border-indigo-500 border-4">
+            <div class="card mb-6 border-indigo-500 border-4">
                 <h3 class="text-lg font-black mb-4 flex items-center gap-2">📍 地域区分設定</h3>
                 <input type="number" id="care-unit-price" value="10.84" step="0.01" class="text-3xl font-black text-indigo-700 bg-indigo-50" oninput="calculate()">
             </div>
 
-            <!-- 新規項目追加フォーム -->
+            <!-- 【機能拡張】医療保険用：ベースアップ評価料設定マスタ -->
+            <div class="card mb-6 border-blue-500 border-4">
+                <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-blue-700">🩺 令和8年度 医療保険ベースアップ評価料設定</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅰ（基本の1.8%引き上げ）</label>
+                        <select id="med-baseup-type" class="p-3 border-2 border-blue-200 rounded-xl font-black text-blue-900 bg-blue-50 text-base" onchange="calculate()">
+                            <option value="none">算定なし (0%)</option>
+                            <option value="calculated" selected>算定あり (1.8%自動加算)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅱ（施設別・月定額上乗せ分）</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="med-baseup-ii-val" value="0" min="0" step="10" class="text-xl font-black text-blue-700 bg-blue-50" oninput="calculate()">
+                            <span class="text-sm font-bold text-gray-500">円/月</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【機能拡張】介護保険用：処遇改善・特例調整（1.8%）マスタ -->
+            <div class="card mb-8 border-amber-500 border-4">
+                <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-amber-700">✨ 令和8年度 介護保険処遇改善加算設定</h3>
+                <label class="text-xs font-bold text-gray-500 mb-1 block">事業所の加算・特例調整区分</label>
+                <select id="shogu-type" class="p-3 border-2 border-amber-200 rounded-xl font-black text-amber-900 bg-amber-50 text-base" onchange="calculate()">
+                    <option value="none">算定なし (0%)</option>
+                    <option value="I_plus">新加算Ⅰ + 特例調整 (24.5% + 1.8% = 26.3%)</option>
+                    <option value="I">新加算区分 Ⅰ 単体 (24.5%)</option>
+                    <option value="II_plus">新加算Ⅱ + 特例調整 (22.4% + 1.8% = 24.2%)</option>
+                    <option value="II">新加算区分 Ⅱ 単体 (22.4%)</option>
+                    <option value="III_plus">新加算Ⅲ + 特例調整 (18.2% + 1.8% = 20.0%)</option>
+                    <option value="III">新加算区分 Ⅲ 単体 (18.2%)</option>
+                    <option value="IV_plus">新加算Ⅳ + 特例調整 (14.5% + 1.8% = 16.3%)</option>
+                    <option value="IV">新加算区分 Ⅳ 単体 (14.5%)</option>
+                    <option value="base_only">旧ベースアップ支援 / 特例措置単体 (1.8%)</option>
+                </select>
+            </div>
+
             <div class="card mb-8 border-green-500 border-2">
                 <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-green-700">➕ 算定項目の追加</h3>
                 <div class="space-y-4">
@@ -190,7 +238,6 @@
                 </div>
             </div>
 
-            <!-- マスタ一覧 -->
             <div id="master-list-container" class="mt-8"></div>
         </section>
     </div>
@@ -239,6 +286,20 @@
             ]
         };
 
+        // 令和8年度改正・期中特例対応：処遇改善＆特例調整1.8%マスタ
+        const shoguRates = {
+            none: 0.0,
+            I_plus: 0.245 + 0.018, // 26.3%
+            I: 0.245,
+            II_plus: 0.224 + 0.018, // 24.2%
+            II: 0.224,
+            III_plus: 0.182 + 0.018, // 20.0%
+            III: 0.182,
+            IV_plus: 0.145 + 0.018, // 16.3%
+            IV: 0.145,
+            base_only: 0.018 // 1.8%
+        };
+
         const canvas = document.getElementById('signature-pad');
         const ctx = canvas.getContext('2d');
         let drawing = false;
@@ -276,7 +337,6 @@
             calculate();
         }
 
-        // --- マスタ追加・編集・削除機能 ---
         function addNewMasterItem() {
             const type = document.getElementById('add-item-type').value;
             const name = document.getElementById('add-item-name').value;
@@ -289,11 +349,8 @@
             }
 
             masterData[type].push({ name, price, logic });
-            
-            // フォームリセット
             document.getElementById('add-item-name').value = '';
             document.getElementById('add-item-price').value = '';
-            
             renderMaster();
             alert("マスタに追加しました");
         }
@@ -307,9 +364,8 @@
 
         function updateMasterValue(type, idx, val) {
             masterData[type][idx].price = parseInt(val) || 0;
-            renderCalcItems(); // 単価変更を費用計算画面に反映
+            renderCalcItems();
         }
-        // ----------------------------------
 
         function adjustBaseVisit(amount) {
             const el = document.getElementById('input-visit-count');
@@ -359,24 +415,89 @@
             const specialCount = parseInt(document.getElementById('input-special-count').value) || 0;
             const specialPrice = parseInt(document.getElementById('input-special-price').value) || 0;
             const careUnitPrice = parseFloat(document.getElementById('care-unit-price').value) || 10.84;
+            
             document.getElementById('print-date').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
             document.getElementById('print-spec-count').innerText = specialCount + '回';
             document.getElementById('print-spec-price').innerText = '¥' + specialPrice.toLocaleString();
-            let normalTotal = 0;
+            
+            let normalTotalUnitsOrYen = 0;
+            
             document.querySelectorAll('.item-check').forEach((el) => {
                 const idx = el.dataset.idx;
                 const item = masterData[type][idx];
                 const row = document.getElementById(`item-row-${idx}`);
                 const count = parseInt(document.getElementById(`item-count-${idx}`).value) || 0;
                 
-                // 印刷用回数表示を更新
                 const printCountSpan = document.getElementById(`print-count-${idx}`);
                 if (printCountSpan) printCountSpan.innerText = count;
 
-                if(el.checked) { row.classList.add('item-checked'); normalTotal += item.price * count; } else { row.classList.remove('item-checked'); }
+                if(el.checked) { 
+                    row.classList.add('item-checked'); 
+                    normalTotalUnitsOrYen += item.price * count; 
+                } else { 
+                    row.classList.remove('item-checked'); 
+                }
             });
-            if(type === 'care') normalTotal = Math.round(normalTotal * careUnitPrice);
-            let grandTotal = normalTotal + (specialCount * specialPrice);
+
+            let normalTotalCost = 0;
+            const shoguRow = document.getElementById('shogu-calc-row');
+
+            if (type === 'care') {
+                // 【介護保険側】新加算＋特例1.8%の計算
+                const shoguType = document.getElementById('shogu-type').value;
+                const rate = shoguRates[shoguType];
+                
+                const shoguUnits = Math.round(normalTotalUnitsOrYen * rate);
+                const totalUnits = normalTotalUnitsOrYen + shoguUnits;
+                
+                normalTotalCost = Math.floor(totalUnits * careUnitPrice);
+
+                if (shoguType !== 'none' && normalTotalUnitsOrYen > 0) {
+                    shoguRow.classList.remove('hidden');
+                    shoguRow.classList.add('flex');
+                    document.getElementById('shogu-title-label').innerText = "介護職員等処遇改善加算・特例調整";
+                    document.getElementById('shogu-rate-label').innerText = `令和8年度基準算定率: ${(rate * 100).toFixed(1)}%`;
+                    document.getElementById('shogu-value-label').innerText = `+ ${shoguUnits.toLocaleString()} 単位`;
+                } else {
+                    shoguRow.classList.remove('flex');
+                    shoguRow.classList.add('hidden');
+                }
+            } else {
+                // 【医療保険側】訪問看護ベースアップ評価料計算の拡張
+                const medBaseupType = document.getElementById('med-baseup-type').value;
+                const medBaseupIIVal = parseInt(document.getElementById('med-baseup-ii-val').value) || 0;
+                
+                let baseupYen = 0;
+                let textLabel = "";
+                
+                if (medBaseupType === 'calculated' && normalTotalUnitsOrYen > 0) {
+                    // ベースアップ評価料Ⅰ (基本報酬総額の1.8%)
+                    baseupYen += Math.round(normalTotalUnitsOrYen * 0.018);
+                    textLabel += "ベースアップ評価料Ⅰ(1.8%)";
+                }
+                
+                if (medBaseupIIVal > 0 && normalTotalUnitsOrYen > 0) {
+                    baseupYen += medBaseupIIVal;
+                    if(textLabel !== "") textLabel += " + ";
+                    textLabel += "評価料Ⅱ(定額)";
+                }
+
+                normalTotalCost = normalTotalUnitsOrYen + baseupYen;
+
+                if (baseupYen > 0) {
+                    shoguRow.classList.remove('hidden');
+                    shoguRow.classList.add('flex');
+                    document.getElementById('shogu-title-label').innerText = "訪問看護ベースアップ評価料";
+                    document.getElementById('shogu-rate-label').innerText = textLabel;
+                    document.getElementById('shogu-value-label').innerText = `+ ¥${baseupYen.toLocaleString()}`;
+                } else {
+                    shoguRow.classList.remove('flex');
+                    shoguRow.classList.add('hidden');
+                }
+            }
+
+            let grandTotal = normalTotalCost + (specialCount * specialPrice);
+            
             document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
             document.getElementById('user-cost').innerText = `¥${Math.floor(grandTotal * ratio).toLocaleString()}`;
             document.getElementById('footer-result-price').innerText = `¥${grandTotal.toLocaleString()}`;
@@ -443,7 +564,6 @@
             });
         }
 
-        // マスタリスト表示を単価編集・削除に対応
         function renderMaster() {
             const container = document.getElementById('master-list-container');
             container.innerHTML = '';
@@ -469,7 +589,7 @@
                     container.appendChild(d);
                 });
             });
-            renderCalcItems(); // マスタの変更に合わせて計算画面を再描画
+            renderCalcItems();
         }
 
         window.onload = function() {
