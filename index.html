@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪問看護費用シミュレーター (令和8年度改定対応版)</title>
+    <title>訪問看護費用シミュレーター (令和8年度改定完全対応版)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -88,7 +88,6 @@
                         <p class="text-xs font-black text-slate-400 mb-4 border-b-2 border-slate-200 pb-1 uppercase tracking-widest">算定項目ごとの回数調整</p>
                         <div id="calc-items" class="space-y-3"></div>
                         
-                        <!-- 処遇改善・ベースアップ評価料の表示領域 -->
                         <div id="shogu-calc-row" class="hidden items-center justify-between p-3 mt-4 bg-amber-50 border-2 border-amber-200 rounded-2xl shadow-sm print:bg-white print:border-none">
                             <div class="flex flex-col">
                                 <span class="text-sm font-black text-amber-900 leading-tight" id="shogu-title-label">処遇改善加算等</span>
@@ -131,7 +130,7 @@
                 <div class="mt-10 pt-6 border-t-2 border-slate-100 signature-area">
                     <div class="flex justify-between items-end mb-2">
                         <label class="text-sm font-black text-slate-500">ご署名 / 確認印</label>
-                        <button onclick="clearSignature()" class="no-print text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100">書き重す</button>
+                        <button onclick="clearSignature()" class="no-print text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full hover:bg-red-100">書き直す</button>
                     </div>
                     <canvas id="signature-pad"></canvas>
                     <p class="text-[10px] text-gray-400 mt-2 text-center">上記内容について確認いたしました。</p>
@@ -179,19 +178,18 @@
                 <input type="number" id="care-unit-price" value="10.84" step="0.01" class="text-3xl font-black text-indigo-700 bg-indigo-50" oninput="calculate()">
             </div>
 
-            <!-- 【機能拡張】医療保険用：ベースアップ評価料設定マスタ -->
             <div class="card mb-6 border-blue-500 border-4">
                 <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-blue-700">🩺 令和8年度 医療保険ベースアップ評価料設定</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅰ（基本の1.8%引き上げ）</label>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅰ（賃上げ1.8%自動加算）</label>
                         <select id="med-baseup-type" class="p-3 border-2 border-blue-200 rounded-xl font-black text-blue-900 bg-blue-50 text-base" onchange="calculate()">
                             <option value="none">算定なし (0%)</option>
                             <option value="calculated" selected>算定あり (1.8%自動加算)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅱ（施設別・月定額上乗せ分）</label>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">訪問看護ベースアップ評価料Ⅱ（施設規模別・月額定額分）</label>
                         <div class="flex items-center gap-2">
                             <input type="number" id="med-baseup-ii-val" value="0" min="0" step="10" class="text-xl font-black text-blue-700 bg-blue-50" oninput="calculate()">
                             <span class="text-sm font-bold text-gray-500">円/月</span>
@@ -200,21 +198,20 @@
                 </div>
             </div>
 
-            <!-- 【機能拡張】介護保険用：処遇改善・特例調整（1.8%）マスタ -->
             <div class="card mb-8 border-amber-500 border-4">
                 <h3 class="text-lg font-black mb-4 flex items-center gap-2 text-amber-700">✨ 令和8年度 介護保険処遇改善加算設定</h3>
-                <label class="text-xs font-bold text-gray-500 mb-1 block">事業所の加算・特例調整区分</label>
+                <label class="text-xs font-bold text-gray-500 mb-1 block">事業所の新加算区分および特例調整</label>
                 <select id="shogu-type" class="p-3 border-2 border-amber-200 rounded-xl font-black text-amber-900 bg-amber-50 text-base" onchange="calculate()">
                     <option value="none">算定なし (0%)</option>
-                    <option value="I_plus">新加算Ⅰ + 特例調整 (24.5% + 1.8% = 26.3%)</option>
+                    <option value="I_plus">新加算Ⅰ + 特例調整改定 (24.5% + 1.8% = 26.3%)</option>
                     <option value="I">新加算区分 Ⅰ 単体 (24.5%)</option>
-                    <option value="II_plus">新加算Ⅱ + 特例調整 (22.4% + 1.8% = 24.2%)</option>
+                    <option value="II_plus">新加算Ⅱ + 特例調整改定 (22.4% + 1.8% = 24.2%)</option>
                     <option value="II">新加算区分 Ⅱ 単体 (22.4%)</option>
-                    <option value="III_plus">新加算Ⅲ + 特例調整 (18.2% + 1.8% = 20.0%)</option>
+                    <option value="III_plus">新加算Ⅲ + 特例調整改定 (18.2% + 1.8% = 20.0%)</option>
                     <option value="III">新加算区分 Ⅲ 単体 (18.2%)</option>
-                    <option value="IV_plus">新加算Ⅳ + 特例調整 (14.5% + 1.8% = 16.3%)</option>
+                    <option value="IV_plus">新加算Ⅳ + 特例調整改定 (14.5% + 1.8% = 16.3%)</option>
                     <option value="IV">新加算区分 Ⅳ 単体 (14.5%)</option>
-                    <option value="base_only">旧ベースアップ支援 / 特例措置単体 (1.8%)</option>
+                    <option value="base_only">旧ベースアップ支援 / 特例措置相当分のみ (1.8%)</option>
                 </select>
             </div>
 
@@ -256,6 +253,7 @@
     </footer>
 
     <script>
+        // 令和8年度改定に準拠したマスターデータ初期値
         let masterData = {
             medical: [
                 { name: '基本療養費', price: 5550, logic: 'per-visit' },
@@ -286,7 +284,7 @@
             ]
         };
 
-        // 令和8年度改正・期中特例対応：処遇改善＆特例調整1.8%マスタ
+        // 令和8年度基準および期中賃上げ特例改定（1.8%）対応マスタ
         const shoguRates = {
             none: 0.0,
             I_plus: 0.245 + 0.018, // 26.3%
@@ -426,178 +424,4 @@
                 const idx = el.dataset.idx;
                 const item = masterData[type][idx];
                 const row = document.getElementById(`item-row-${idx}`);
-                const count = parseInt(document.getElementById(`item-count-${idx}`).value) || 0;
-                
-                const printCountSpan = document.getElementById(`print-count-${idx}`);
-                if (printCountSpan) printCountSpan.innerText = count;
-
-                if(el.checked) { 
-                    row.classList.add('item-checked'); 
-                    normalTotalUnitsOrYen += item.price * count; 
-                } else { 
-                    row.classList.remove('item-checked'); 
-                }
-            });
-
-            let normalTotalCost = 0;
-            const shoguRow = document.getElementById('shogu-calc-row');
-
-            if (type === 'care') {
-                // 【介護保険側】新加算＋特例1.8%の計算
-                const shoguType = document.getElementById('shogu-type').value;
-                const rate = shoguRates[shoguType];
-                
-                const shoguUnits = Math.round(normalTotalUnitsOrYen * rate);
-                const totalUnits = normalTotalUnitsOrYen + shoguUnits;
-                
-                normalTotalCost = Math.floor(totalUnits * careUnitPrice);
-
-                if (shoguType !== 'none' && normalTotalUnitsOrYen > 0) {
-                    shoguRow.classList.remove('hidden');
-                    shoguRow.classList.add('flex');
-                    document.getElementById('shogu-title-label').innerText = "介護職員等処遇改善加算・特例調整";
-                    document.getElementById('shogu-rate-label').innerText = `令和8年度基準算定率: ${(rate * 100).toFixed(1)}%`;
-                    document.getElementById('shogu-value-label').innerText = `+ ${shoguUnits.toLocaleString()} 単位`;
-                } else {
-                    shoguRow.classList.remove('flex');
-                    shoguRow.classList.add('hidden');
-                }
-            } else {
-                // 【医療保険側】訪問看護ベースアップ評価料計算の拡張
-                const medBaseupType = document.getElementById('med-baseup-type').value;
-                const medBaseupIIVal = parseInt(document.getElementById('med-baseup-ii-val').value) || 0;
-                
-                let baseupYen = 0;
-                let textLabel = "";
-                
-                if (medBaseupType === 'calculated' && normalTotalUnitsOrYen > 0) {
-                    // ベースアップ評価料Ⅰ (基本報酬総額の1.8%)
-                    baseupYen += Math.round(normalTotalUnitsOrYen * 0.018);
-                    textLabel += "ベースアップ評価料Ⅰ(1.8%)";
-                }
-                
-                if (medBaseupIIVal > 0 && normalTotalUnitsOrYen > 0) {
-                    baseupYen += medBaseupIIVal;
-                    if(textLabel !== "") textLabel += " + ";
-                    textLabel += "評価料Ⅱ(定額)";
-                }
-
-                normalTotalCost = normalTotalUnitsOrYen + baseupYen;
-
-                if (baseupYen > 0) {
-                    shoguRow.classList.remove('hidden');
-                    shoguRow.classList.add('flex');
-                    document.getElementById('shogu-title-label').innerText = "訪問看護ベースアップ評価料";
-                    document.getElementById('shogu-rate-label').innerText = textLabel;
-                    document.getElementById('shogu-value-label').innerText = `+ ¥${baseupYen.toLocaleString()}`;
-                } else {
-                    shoguRow.classList.remove('flex');
-                    shoguRow.classList.add('hidden');
-                }
-            }
-
-            let grandTotal = normalTotalCost + (specialCount * specialPrice);
-            
-            document.getElementById('result-price').innerText = `¥${grandTotal.toLocaleString()}`;
-            document.getElementById('user-cost').innerText = `¥${Math.floor(grandTotal * ratio).toLocaleString()}`;
-            document.getElementById('footer-result-price').innerText = `¥${grandTotal.toLocaleString()}`;
-            document.getElementById('footer-user-cost').innerText = `¥${Math.floor(grandTotal * ratio).toLocaleString()}`;
-        }
-
-        let myChart;
-        function updateDashboard() {
-            const medP = parseInt(document.getElementById('input-med').value) || 0;
-            const careP = parseInt(document.getElementById('input-care').value) || 0;
-            const ratio = parseInt(document.getElementById('slide-ratio').value);
-            const fixed = parseInt(document.getElementById('input-fixed').value) || 0;
-            const profitTargetPercent = parseInt(document.getElementById('slide-profit-target').value);
-
-            document.getElementById('val-ratio').innerText = `${ratio}% : ${100-ratio}%`;
-            document.getElementById('val-profit-target').innerText = `${profitTargetPercent}%`;
-
-            const avgPrice = (medP * (ratio/100)) + (careP * ((100-ratio)/100));
-            
-            const bep = avgPrice > 0 ? Math.ceil(fixed / avgPrice) : 0;
-            const targetProfitVal = fixed * (1 + (profitTargetPercent / 100));
-            const targetCount = avgPrice > 0 ? Math.ceil(targetProfitVal / avgPrice) : 0;
-
-            document.getElementById('bep-count').innerText = `${bep.toLocaleString()}回`;
-            document.getElementById('target-count').innerText = `${targetCount.toLocaleString()}回`;
-
-            const maxVisits = Math.max(targetCount * 1.5, 300);
-            const step = Math.ceil(maxVisits / 10);
-            
-            const labels = [];
-            const revenueData = [];
-            const fixedCostData = [];
-            const targetProfitLineData = [];
-
-            for (let i = 0; i <= 10; i++) {
-                const visitVal = i * step;
-                labels.push(visitVal);
-                revenueData.push(visitVal * avgPrice);
-                fixedCostData.push(fixed);
-                targetProfitLineData.push(targetProfitVal);
-            }
-
-            const ctx = document.getElementById('bepChart').getContext('2d');
-            if(myChart) myChart.destroy();
-            
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '予測収益', data: revenueData, borderColor: '#4338ca', backgroundColor: 'rgba(67, 56, 202, 0.1)', borderWidth: 4, fill: true, tension: 0.1 },
-                        { label: '損益分岐点', data: fixedCostData, borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointStyle: false },
-                        { label: '利益目標', data: targetProfitLineData, borderColor: '#f97316', borderDash: [10, 5], borderWidth: 2, pointStyle: false }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, animation: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } }, tooltip: { mode: 'index', intersect: false } },
-                    scales: {
-                        x: { title: { display: true, text: '月間訪問回数', font: { size: 10 } } },
-                        y: { beginAtZero: true, ticks: { callback: (value) => '¥' + (value / 10000) + '万', font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        function renderMaster() {
-            const container = document.getElementById('master-list-container');
-            container.innerHTML = '';
-            ['medical', 'care'].forEach(type => {
-                const title = document.createElement('h4');
-                title.className = 'text-xs font-black text-gray-400 mt-8 mb-4 uppercase tracking-widest';
-                title.innerText = type === 'medical' ? '医療保険マスタ' : '介護保険マスタ';
-                container.appendChild(title);
-
-                masterData[type].forEach((item, idx) => {
-                    const d = document.createElement('div');
-                    d.className = 'flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-3 border-l-8 border-indigo-600';
-                    d.innerHTML = `
-                        <div class="flex-1 pr-2">
-                            <p class="font-black text-sm">${item.name}</p>
-                            <p class="text-[10px] text-gray-400">${item.logic === 'per-visit' ? '訪問ごと' : item.logic === 'once-month' ? '月1回' : '2回目以降'}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="number" value="${item.price}" class="master-price-input text-indigo-700 bg-indigo-50 font-black border-2 border-indigo-200 rounded-xl" onchange="updateMasterValue('${type}', ${idx}, this.value)">
-                            <span class="text-xs font-bold text-gray-500">${type === 'care' ? '単位' : '円'}</span>
-                            <button onclick="deleteMasterItem('${type}', ${idx})" class="text-white bg-red-500 rounded-lg p-2 ml-2 hover:bg-red-600 font-bold text-xs shadow-sm">削除</button>
-                        </div>`;
-                    container.appendChild(d);
-                });
-            });
-            renderCalcItems();
-        }
-
-        window.onload = function() {
-            renderMaster();
-            updateDashboard();
-            initSignaturePad();
-        };
-        window.onresize = initSignaturePad;
-    </script>
-</body>
-</html>
+                const count = parseInt(document.getElementById(`item-
